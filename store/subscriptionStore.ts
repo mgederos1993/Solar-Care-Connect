@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { Platform } from 'react-native';
 
 import { subscriptionPlans } from '@/constants/subscriptionPlans';
 import { SubscriptionPlan } from '@/types';
@@ -31,6 +32,36 @@ interface SubscriptionState {
   cancelSubscription: () => void;
   clearAll: () => void;
 }
+
+// Web storage fallback
+const webStorage = {
+  getItem: (name: string) => {
+    try {
+      return localStorage.getItem(name);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (name: string, value: string) => {
+    try {
+      localStorage.setItem(name, value);
+    } catch {
+      // Ignore errors
+    }
+  },
+  removeItem: (name: string) => {
+    try {
+      localStorage.removeItem(name);
+    } catch {
+      // Ignore errors
+    }
+  },
+};
+
+const storage = Platform.select({
+  web: webStorage,
+  default: AsyncStorage,
+});
 
 export const useSubscriptionStore = create<SubscriptionState>()(
   persist(
@@ -100,7 +131,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
     }),
     {
       name: 'subscription-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => storage),
       onRehydrateStorage: () => (state) => {
         console.log('Subscription store rehydrated:', state?.selectedPlan?.name || 'No plan');
       },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { AlertTriangle } from 'lucide-react-native';
 
 import Colors from '@/constants/colors';
@@ -11,6 +11,7 @@ interface Props {
 interface State {
   hasError: boolean;
   error?: Error;
+  errorInfo?: string;
 }
 
 export default class ErrorBoundary extends React.Component<Props, State> {
@@ -25,7 +26,23 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+    this.setState({
+      errorInfo: errorInfo.componentStack
+    });
   }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    
+    // Force a page reload on web
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        window.location.reload();
+      } catch (e) {
+        console.error('Failed to reload page:', e);
+      }
+    }
+  };
 
   render() {
     if (this.state.hasError) {
@@ -39,21 +56,21 @@ export default class ErrorBoundary extends React.Component<Props, State> {
             </Text>
             <TouchableOpacity 
               style={styles.button}
-              onPress={() => {
-                this.setState({ hasError: false, error: undefined });
-                // Force a page reload on web
-                if (typeof window !== 'undefined') {
-                  window.location.reload();
-                }
-              }}
+              onPress={this.handleRetry}
             >
               <Text style={styles.buttonText}>Try Again</Text>
             </TouchableOpacity>
             {__DEV__ && this.state.error && (
               <View style={styles.errorDetails}>
+                <Text style={styles.errorTitle}>Error Details:</Text>
                 <Text style={styles.errorText}>
                   {this.state.error.toString()}
                 </Text>
+                {this.state.errorInfo && (
+                  <Text style={styles.errorText}>
+                    {this.state.errorInfo}
+                  </Text>
+                )}
               </View>
             )}
           </View>
@@ -75,7 +92,8 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
-    maxWidth: 300,
+    maxWidth: 400,
+    width: '100%',
   },
   title: {
     fontSize: 20,
@@ -83,6 +101,7 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     marginTop: 16,
     marginBottom: 8,
+    textAlign: 'center',
   },
   message: {
     fontSize: 16,
@@ -96,11 +115,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    minWidth: 120,
   },
   buttonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+    textAlign: 'center',
   },
   errorDetails: {
     marginTop: 20,
@@ -108,10 +129,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEE2E2',
     borderRadius: 8,
     maxWidth: '100%',
+    width: '100%',
+  },
+  errorTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.error,
+    marginBottom: 8,
   },
   errorText: {
     fontSize: 12,
     color: Colors.light.error,
-    fontFamily: 'monospace',
+    fontFamily: Platform.select({
+      ios: 'Courier',
+      android: 'monospace',
+      web: 'monospace',
+      default: 'monospace',
+    }),
+    marginBottom: 4,
   },
 });

@@ -22,27 +22,22 @@ npm install
 npm start
 ```
 
-### 3. Set Up Notifications (Optional)
+### 3. Build for Web
+```bash
+npm run build:web
+npm run postbuild
+```
 
-To receive notifications when customers subscribe, you can use a webhook service like Make.com or Zapier:
+This creates a `dist/` folder with the static files for your web app.
 
-1. **Using Make.com (Recommended)**:
-   - Sign up at [make.com](https://make.com)
-   - Create a new scenario with a webhook trigger
-   - Add email and SMS actions
-   - Copy the webhook URL
-   - Update `WEBHOOK_URL` in `utils/notifications.ts`
+### 4. Deploy to GitHub Pages
 
-2. **Using Zapier**:
-   - Sign up at [zapier.com](https://zapier.com)
-   - Create a new Zap with webhook trigger
-   - Add Gmail and SMS actions
-   - Copy the webhook URL
-   - Update `WEBHOOK_URL` in `utils/notifications.ts`
+1. Push your code to a GitHub repository
+2. Go to Settings > Pages in your GitHub repo
+3. Select "GitHub Actions" as the source
+4. The app will automatically deploy when you push to the main branch
 
-### 4. Test Notifications
-
-The app will automatically send notifications when users subscribe. You can test the webhook by subscribing to a plan in the app.
+Your app will be available at: `https://yourusername.github.io/your-repo-name`
 
 ## Subscription Plans
 
@@ -55,13 +50,6 @@ The app will automatically send notifications when users subscribe. You can test
 
 For questions or support, contact: solarcareconnect@gmail.com
 
-## Deployment
-
-The app can be deployed to:
-- **Mobile**: Expo Application Services (EAS)
-- **Web**: Vercel, Netlify, or any static hosting
-- **Notifications**: Make.com, Zapier, or custom webhook service
-
 ## Tech Stack
 
 - React Native with Expo
@@ -69,3 +57,30 @@ The app can be deployed to:
 - Zustand for state management
 - Expo Router for navigation
 - Lucide React Native for icons
+- GitHub Pages for deployment
+
+## Deployment Options
+
+- **GitHub Pages**: Free static hosting (recommended)
+- **Netlify**: Drag and drop the `dist/` folder
+- **Vercel**: Connect your GitHub repo
+- **Expo Hosting**: Run `expo publish:web`
+
+## Troubleshooting
+
+If you encounter deployment issues:
+
+1. Make sure all dependencies are installed: `npm install`
+2. Check that the build completes without errors: `npm run build:web`
+3. Verify the `dist/` folder contains an `index.html` file
+4. Check the browser console for any JavaScript errors
+5. Ensure your GitHub Pages settings are configured correctly
+
+## Progressive Web App (PWA)
+
+The app includes PWA features:
+- Add to home screen on mobile devices
+- Offline functionality
+- App-like experience in browsers
+
+Users can install it directly from their browser without visiting an app store.

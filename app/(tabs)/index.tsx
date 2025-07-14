@@ -1,4 +1,4 @@
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight, Calendar, CheckCircle, Infinity } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -23,7 +23,11 @@ export default function HomeScreen() {
   }, [user]);
 
   const handleSubscriptionPress = () => {
-    router.push('/appointments');
+    try {
+      router.push('/appointments');
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
   };
 
   const handlePlanSelect = async (planId: string) => {
@@ -34,7 +38,13 @@ export default function HomeScreen() {
       // Open JotForm with plan information
       const jotformUrl = `https://form.jotform.com/251608739182059?plan=${encodeURIComponent(plan.name)}&price=${plan.price}&interval=${plan.interval}&appointments=${plan.appointmentsPerMonth}`;
       
-      await WebBrowser.openBrowserAsync(jotformUrl);
+      if (Platform.OS === 'web') {
+        // On web, open in new tab
+        window.open(jotformUrl, '_blank');
+      } else {
+        // On mobile, use WebBrowser
+        await WebBrowser.openBrowserAsync(jotformUrl);
+      }
     } catch (error) {
       console.error('Failed to open JotForm:', error);
     }

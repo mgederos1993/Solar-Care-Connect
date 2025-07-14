@@ -4,13 +4,17 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
-import { LogBox } from "react-native";
+import { LogBox, Platform } from "react-native";
 
 import Colors from "@/constants/colors";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+if (Platform.OS !== 'web') {
+  SplashScreen.preventAutoHideAsync().catch(() => {
+    // Ignore errors on web
+  });
+}
 
 // Ignore any specific warnings or logs if needed for debugging
 LogBox.ignoreLogs(['Possible Unhandled Promise Rejection']);
@@ -20,6 +24,7 @@ const queryClient = new QueryClient({
     queries: {
       retry: false,
       refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
     },
   },
 });
@@ -28,13 +33,17 @@ export default function RootLayout() {
   useEffect(() => {
     const hideSplash = async () => {
       try {
-        await SplashScreen.hideAsync();
+        if (Platform.OS !== 'web') {
+          await SplashScreen.hideAsync();
+        }
       } catch (error) {
         console.error('Error hiding splash screen:', error);
       }
     };
     
-    hideSplash();
+    // Add a small delay to ensure everything is loaded
+    const timer = setTimeout(hideSplash, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
