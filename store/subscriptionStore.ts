@@ -33,23 +33,23 @@ interface SubscriptionState {
   clearAll: () => void;
 }
 
-// Web storage fallback
+// Web storage adapter that matches AsyncStorage interface
 const webStorage = {
-  getItem: (name: string) => {
+  getItem: async (name: string): Promise<string | null> => {
     try {
       return localStorage.getItem(name);
     } catch {
       return null;
     }
   },
-  setItem: (name: string, value: string) => {
+  setItem: async (name: string, value: string): Promise<void> => {
     try {
       localStorage.setItem(name, value);
     } catch {
       // Ignore errors
     }
   },
-  removeItem: (name: string) => {
+  removeItem: async (name: string): Promise<void> => {
     try {
       localStorage.removeItem(name);
     } catch {
@@ -58,10 +58,7 @@ const webStorage = {
   },
 };
 
-const storage = Platform.select({
-  web: webStorage,
-  default: AsyncStorage,
-});
+const storage = Platform.OS === 'web' ? webStorage : AsyncStorage;
 
 export const useSubscriptionStore = create<SubscriptionState>()(
   persist(
