@@ -41,8 +41,6 @@ const webStorage = {
   },
 };
 
-const storage = Platform.OS === 'web' ? webStorage : AsyncStorage;
-
 export const useUserStore = create<UserState>()(
   persist(
     (set, get) => ({
@@ -89,7 +87,7 @@ export const useUserStore = create<UserState>()(
     }),
     {
       name: 'user-storage',
-      storage: createJSONStorage(() => storage),
+      storage: createJSONStorage(() => Platform.OS === 'web' ? webStorage : AsyncStorage),
       onRehydrateStorage: () => (state) => {
         console.log('User store rehydrated:', state?.user?.name || 'No user');
       },

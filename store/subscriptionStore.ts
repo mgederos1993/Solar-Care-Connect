@@ -58,8 +58,6 @@ const webStorage = {
   },
 };
 
-const storage = Platform.OS === 'web' ? webStorage : AsyncStorage;
-
 export const useSubscriptionStore = create<SubscriptionState>()(
   persist(
     (set, get) => ({
@@ -128,7 +126,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
     }),
     {
       name: 'subscription-storage',
-      storage: createJSONStorage(() => storage),
+      storage: createJSONStorage(() => Platform.OS === 'web' ? webStorage : AsyncStorage),
       onRehydrateStorage: () => (state) => {
         console.log('Subscription store rehydrated:', state?.selectedPlan?.name || 'No plan');
       },
