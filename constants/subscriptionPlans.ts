@@ -67,7 +67,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
   {
     id: 'retainer',
     name: 'Retainer',
-    price: 2000,
+    price: 3000,
     interval: 'monthly',
     features: [
       'Unlimited qualified solar appointments',
