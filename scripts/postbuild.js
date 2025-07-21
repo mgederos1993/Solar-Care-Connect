@@ -2,19 +2,19 @@ const fs = require('fs');
 const path = require('path');
 
 // Define source and destination directories
-const sourceDir = path.join(__dirname, '..', 'web-build');
-const destDir = path.join(__dirname, '..', 'dist');
+const sourceDir = path.join(__dirname, '..', 'dist');
+const destDir = path.join(__dirname, '..', 'build');
 
 // Check if source directory exists
 if (!fs.existsSync(sourceDir)) {
-  console.error('Web build directory not found. Make sure to run "expo build:web" first.');
+  console.error('Dist directory not found. Make sure to run "expo export:web" first.');
   process.exit(1);
 }
 
 // Create destination directory if it doesn't exist
 if (!fs.existsSync(destDir)) {
   fs.mkdirSync(destDir, { recursive: true });
-  console.log('Created dist directory.');
+  console.log('Created build directory.');
 }
 
 // Function to copy directory recursively
@@ -38,7 +38,7 @@ function copyRecursiveSync(src, dest) {
   }
 }
 
-// Copy files from web-build to dist
-console.log('Copying web build to dist folder...');
+// Copy files from dist to build
+console.log('Copying dist to build folder...');
 copyRecursiveSync(sourceDir, destDir);
-console.log('Build files copied to dist/ successfully!');
+console.log('Build files copied to build/ successfully!');
