@@ -138,16 +138,16 @@
             console.log('Storage clear failed:', e);
         }
         
-        let appLoadTimeout;
-        let loadingCheckInterval;
-        let hasAppLoaded = false;
+        var appLoadTimeout;
+        var loadingCheckInterval;
+        var hasAppLoaded = false;
         
         function hideLoading() {
             if (hasAppLoaded) return;
             hasAppLoaded = true;
             
             console.log('Hiding loading screen');
-            const loadingEl = document.getElementById('loading-indicator');
+            var loadingEl = document.getElementById('loading-indicator');
             if (loadingEl) {
                 loadingEl.classList.add('hidden');
             }
@@ -159,35 +159,31 @@
         
         function showError(message) {
             console.error('App loading error:', message);
-            const loadingEl = document.getElementById('loading-indicator');
+            var loadingEl = document.getElementById('loading-indicator');
             if (loadingEl) {
-                loadingEl.innerHTML = `
-                    <div class="error-container">
-                        <div>Failed to load Solar Care Connect</div>
-                        <div style="font-size: 14px; margin-top: 8px; color: #6b7280;">
-                            ${message || 'Please check your internet connection and try again.'}
-                        </div>
-                        <button class="retry-button" onclick="window.location.reload()">
-                            Retry
-                        </button>
-                    </div>
-                `;
+                loadingEl.innerHTML = '<div class="error-container">' +
+                    '<div>Failed to load Solar Care Connect</div>' +
+                    '<div style="font-size: 14px; margin-top: 8px; color: #6b7280;">' +
+                    (message || 'Please check your internet connection and try again.') +
+                    '</div>' +
+                    '<button class="retry-button" onclick="window.location.reload()">Retry</button>' +
+                    '</div>';
             }
         }
         
         // Check for React app content every 500ms
         loadingCheckInterval = setInterval(function() {
-            const root = document.getElementById('root');
+            var root = document.getElementById('root');
             if (root) {
                 // Check if there's actual React content (more than just the loading div)
-                const children = Array.from(root.children);
-                const hasReactContent = children.some(child => 
-                    child.id !== 'loading-indicator' && 
-                    child.innerHTML && 
-                    child.innerHTML.trim() !== '' &&
-                    child.tagName !== 'SCRIPT' &&
-                    !child.classList.contains('loading-container')
-                );
+                var children = Array.prototype.slice.call(root.children);
+                var hasReactContent = children.some(function(child) {
+                    return child.id !== 'loading-indicator' && 
+                           child.innerHTML && 
+                           child.innerHTML.trim() !== '' &&
+                           child.tagName !== 'SCRIPT' &&
+                           !child.classList.contains('loading-container');
+                });
                 
                 if (hasReactContent) {
                     console.log('React content detected, hiding loading');
@@ -196,12 +192,12 @@
             }
         }, 500);
         
-        // Show error after 15 seconds if app hasn't loaded
+        // Show error after 20 seconds if app hasn't loaded
         appLoadTimeout = setTimeout(function() {
             if (!hasAppLoaded) {
-                showError('The app is taking longer than expected to load. This may be due to a slow internet connection or a JavaScript error.');
+                showError('The app is taking longer than expected to load. This may be due to a JavaScript compatibility issue.');
             }
-        }, 15000);
+        }, 20000);
         
         // Listen for React app ready signal
         window.addEventListener('message', function(event) {
@@ -216,12 +212,12 @@
             console.log('DOM content loaded');
             setTimeout(function() {
                 if (!hasAppLoaded) {
-                    const root = document.getElementById('root');
+                    var root = document.getElementById('root');
                     if (root && root.children.length > 1) {
                         hideLoading();
                     }
                 }
-            }, 3000);
+            }, 5000);
         });
         
         // Listen for any JavaScript errors
@@ -229,7 +225,7 @@
             console.error('JavaScript error:', event.error);
             if (!hasAppLoaded) {
                 setTimeout(function() {
-                    showError(`JavaScript error: ${event.error?.message || 'Unknown error'}`);
+                    showError('JavaScript error: ' + (event.error && event.error.message ? event.error.message : 'Unknown error'));
                 }, 2000);
             }
         });
@@ -239,18 +235,18 @@
             console.error('Unhandled promise rejection:', event.reason);
             if (!hasAppLoaded) {
                 setTimeout(function() {
-                    showError(`Promise rejection: ${event.reason?.message || 'Unknown error'}`);
+                    showError('Promise rejection: ' + (event.reason && event.reason.message ? event.reason.message : 'Unknown error'));
                 }, 2000);
             }
         });
         
-        // Force hide loading after 25 seconds regardless
+        // Force hide loading after 30 seconds regardless
         setTimeout(function() {
             if (!hasAppLoaded) {
-                console.log('Force hiding loading after 25 seconds');
+                console.log('Force hiding loading after 30 seconds');
                 hideLoading();
             }
-        }, 25000);
+        }, 30000);
     </script>
 </body>
 </html>

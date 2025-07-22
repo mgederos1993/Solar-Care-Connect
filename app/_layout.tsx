@@ -39,7 +39,10 @@ export default function RootLayout() {
           // Signal to web that app is ready
           if (typeof window !== 'undefined') {
             console.log('Sending app-ready message');
-            window.postMessage('app-ready', '*');
+            // Use setTimeout to ensure message is sent after DOM is ready
+            setTimeout(() => {
+              window.postMessage('app-ready', '*');
+            }, 2000);
           }
         }
       } catch (error) {
@@ -47,8 +50,8 @@ export default function RootLayout() {
       }
     };
     
-    // Add a small delay to ensure everything is loaded
-    const timer = setTimeout(hideSplash, 1000);
+    // Add a longer delay to ensure everything is loaded
+    const timer = setTimeout(hideSplash, 3000);
     return () => clearTimeout(timer);
   }, []);
 
