@@ -48,7 +48,7 @@ export default function RootLayout() {
     };
     
     // Add a small delay to ensure everything is loaded
-    const timer = setTimeout(hideSplash, 500);
+    const timer = setTimeout(hideSplash, 1000);
     return () => clearTimeout(timer);
   }, []);
 

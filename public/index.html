@@ -117,16 +117,6 @@
     </div>
     
     <script>
-        // Clear storage for fresh start
-        try {
-            if (typeof Storage !== 'undefined') {
-                localStorage.clear();
-                sessionStorage.clear();
-            }
-        } catch (e) {
-            console.log('Storage clear failed:', e);
-        }
-        
         let appLoadTimeout;
         let loadingCheckInterval;
         let hasAppLoaded = false;
@@ -164,7 +154,7 @@
             }
         }
         
-        // Check for React app content every 100ms
+        // Check for React app content every 200ms
         loadingCheckInterval = setInterval(function() {
             const root = document.getElementById('root');
             if (root) {
@@ -173,28 +163,29 @@
                 const hasReactContent = children.some(child => 
                     child.id !== 'loading-indicator' && 
                     child.innerHTML && 
-                    child.innerHTML.trim() !== ''
+                    child.innerHTML.trim() !== '' &&
+                    child.tagName !== 'SCRIPT'
                 );
                 
                 if (hasReactContent) {
                     console.log('React content detected, hiding loading');
-                    hideLoading();
+                    setTimeout(hideLoading, 500); // Small delay to ensure content is rendered
                 }
             }
-        }, 100);
+        }, 200);
         
-        // Show error after 15 seconds if app hasn't loaded
+        // Show error after 20 seconds if app hasn't loaded
         appLoadTimeout = setTimeout(function() {
             if (!hasAppLoaded) {
-                showError('The app is taking longer than expected to load.');
+                showError('The app is taking longer than expected to load. This may be due to a slow internet connection or JavaScript error.');
             }
-        }, 15000);
+        }, 20000);
         
         // Listen for React app ready signal
         window.addEventListener('message', function(event) {
             if (event.data === 'app-ready') {
                 console.log('Received app-ready message');
-                hideLoading();
+                setTimeout(hideLoading, 300);
             }
         });
         
@@ -208,23 +199,36 @@
                         hideLoading();
                     }
                 }
-            }, 1000);
+            }, 2000);
         });
         
         // Listen for any JavaScript errors
         window.addEventListener('error', function(event) {
             console.error('JavaScript error:', event.error);
-            setTimeout(function() {
-                if (!hasAppLoaded) {
-                    showError('A JavaScript error occurred while loading the app.');
-                }
-            }, 2000);
+            if (!hasAppLoaded) {
+                setTimeout(function() {
+                    showError(`JavaScript error: ${event.error?.message || 'Unknown error'}`);
+                }, 1000);
+            }
         });
         
         // Listen for unhandled promise rejections
         window.addEventListener('unhandledrejection', function(event) {
             console.error('Unhandled promise rejection:', event.reason);
+            if (!hasAppLoaded) {
+                setTimeout(function() {
+                    showError(`Promise rejection: ${event.reason?.message || 'Unknown error'}`);
+                }, 1000);
+            }
         });
+        
+        // Force hide loading after 30 seconds regardless
+        setTimeout(function() {
+            if (!hasAppLoaded) {
+                console.log('Force hiding loading after 30 seconds');
+                hideLoading();
+            }
+        }, 30000);
     </script>
 </body>
 </html>
