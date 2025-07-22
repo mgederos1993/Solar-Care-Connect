@@ -38,6 +38,7 @@ export default function RootLayout() {
         } else {
           // Signal to web that app is ready
           if (typeof window !== 'undefined') {
+            console.log('Sending app-ready message');
             window.postMessage('app-ready', '*');
           }
         }
@@ -47,7 +48,7 @@ export default function RootLayout() {
     };
     
     // Add a small delay to ensure everything is loaded
-    const timer = setTimeout(hideSplash, 100);
+    const timer = setTimeout(hideSplash, 500);
     return () => clearTimeout(timer);
   }, []);
 

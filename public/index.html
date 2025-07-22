@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1.00001,viewport-fit=cover" />
     <title>Solar Care Connect - AI Solar Appointments</title>
     <meta name="description" content="AI-powered solar appointment generation app that automatically calls potential customers and schedules qualified appointments for solar businesses." />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="./manifest.json" />
     <meta name="theme-color" content="#3B82F6" />
     <link rel="icon" href="https://images.unsplash.com/photo-1509391366360-2e959784a276?ixlib=rb-4.0.3&auto=format&fit=crop&w=32&q=80" />
     <style>
@@ -54,6 +54,7 @@
             align-items: center;
             justify-content: center;
             flex-direction: column;
+            transition: opacity 0.3s ease;
         }
         .loading-spinner {
             display: inline-block;
@@ -98,7 +99,12 @@
         
         /* Hide loading when app is ready */
         .app-ready .loading-container {
-            display: none;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
@@ -122,27 +128,33 @@
         }
         
         let appLoadTimeout;
-        let checkInterval;
+        let loadingCheckInterval;
+        let hasAppLoaded = false;
         
         function hideLoading() {
+            if (hasAppLoaded) return;
+            hasAppLoaded = true;
+            
+            console.log('Hiding loading screen');
             const loadingEl = document.getElementById('loading-indicator');
             if (loadingEl) {
-                loadingEl.style.display = 'none';
+                loadingEl.classList.add('hidden');
             }
             document.body.classList.add('app-ready');
             
             if (appLoadTimeout) clearTimeout(appLoadTimeout);
-            if (checkInterval) clearInterval(checkInterval);
+            if (loadingCheckInterval) clearInterval(loadingCheckInterval);
         }
         
-        function showError() {
+        function showError(message) {
+            console.error('App loading error:', message);
             const loadingEl = document.getElementById('loading-indicator');
             if (loadingEl) {
                 loadingEl.innerHTML = `
                     <div class="error-container">
                         <div>Failed to load Solar Care Connect</div>
                         <div style="font-size: 14px; margin-top: 8px; color: #6b7280;">
-                            Please check your internet connection and try again.
+                            ${message || 'Please check your internet connection and try again.'}
                         </div>
                         <button class="retry-button" onclick="window.location.reload()">
                             Retry
@@ -152,37 +164,66 @@
             }
         }
         
-        // Show error after 20 seconds if app hasn't loaded
-        appLoadTimeout = setTimeout(showError, 20000);
-        
-        // Check for app loading every 500ms
-        checkInterval = setInterval(function() {
+        // Check for React app content every 100ms
+        loadingCheckInterval = setInterval(function() {
             const root = document.getElementById('root');
-            if (root && root.children.length > 1) {
-                hideLoading();
+            if (root) {
+                // Check if there's actual React content (more than just the loading div)
+                const children = Array.from(root.children);
+                const hasReactContent = children.some(child => 
+                    child.id !== 'loading-indicator' && 
+                    child.innerHTML && 
+                    child.innerHTML.trim() !== ''
+                );
+                
+                if (hasReactContent) {
+                    console.log('React content detected, hiding loading');
+                    hideLoading();
+                }
             }
-        }, 500);
+        }, 100);
         
-        // Also listen for window load
-        window.addEventListener('load', function() {
-            setTimeout(hideLoading, 2000);
-        });
+        // Show error after 15 seconds if app hasn't loaded
+        appLoadTimeout = setTimeout(function() {
+            if (!hasAppLoaded) {
+                showError('The app is taking longer than expected to load.');
+            }
+        }, 15000);
         
         // Listen for React app ready signal
         window.addEventListener('message', function(event) {
             if (event.data === 'app-ready') {
+                console.log('Received app-ready message');
                 hideLoading();
             }
         });
         
-        // Fallback: hide after DOMContentLoaded + delay
-        document.addEventListener('DOMContentLoaded', function() {
+        // Also check when window loads
+        window.addEventListener('load', function() {
+            console.log('Window loaded');
             setTimeout(function() {
-                const root = document.getElementById('root');
-                if (root && root.innerHTML.trim() !== '') {
-                    hideLoading();
+                if (!hasAppLoaded) {
+                    const root = document.getElementById('root');
+                    if (root && root.children.length > 1) {
+                        hideLoading();
+                    }
                 }
-            }, 3000);
+            }, 1000);
+        });
+        
+        // Listen for any JavaScript errors
+        window.addEventListener('error', function(event) {
+            console.error('JavaScript error:', event.error);
+            setTimeout(function() {
+                if (!hasAppLoaded) {
+                    showError('A JavaScript error occurred while loading the app.');
+                }
+            }, 2000);
+        });
+        
+        // Listen for unhandled promise rejections
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Unhandled promise rejection:', event.reason);
         });
     </script>
 </body>
