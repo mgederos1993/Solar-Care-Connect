@@ -109,6 +109,15 @@
     </style>
 </head>
 <body>
+    <noscript>
+        <div style="display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px;">
+            <div>
+                <h2>JavaScript Required</h2>
+                <p>Solar Care Connect requires JavaScript to run. Please enable JavaScript in your browser and refresh the page.</p>
+            </div>
+        </div>
+    </noscript>
+    
     <div id="root">
         <div id="loading-indicator" class="loading-container">
             <div class="loading-spinner"></div>
@@ -117,6 +126,18 @@
     </div>
     
     <script>
+        // Clear any previous app state to ensure fresh experience
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.clear();
+            }
+            if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.clear();
+            }
+        } catch (e) {
+            console.log('Storage clear failed:', e);
+        }
+        
         let appLoadTimeout;
         let loadingCheckInterval;
         let hasAppLoaded = false;
@@ -154,7 +175,7 @@
             }
         }
         
-        // Check for React app content every 200ms
+        // Check for React app content every 500ms
         loadingCheckInterval = setInterval(function() {
             const root = document.getElementById('root');
             if (root) {
@@ -164,34 +185,35 @@
                     child.id !== 'loading-indicator' && 
                     child.innerHTML && 
                     child.innerHTML.trim() !== '' &&
-                    child.tagName !== 'SCRIPT'
+                    child.tagName !== 'SCRIPT' &&
+                    !child.classList.contains('loading-container')
                 );
                 
                 if (hasReactContent) {
                     console.log('React content detected, hiding loading');
-                    setTimeout(hideLoading, 500); // Small delay to ensure content is rendered
+                    setTimeout(hideLoading, 1000); // Longer delay to ensure content is fully rendered
                 }
             }
-        }, 200);
+        }, 500);
         
-        // Show error after 20 seconds if app hasn't loaded
+        // Show error after 15 seconds if app hasn't loaded
         appLoadTimeout = setTimeout(function() {
             if (!hasAppLoaded) {
-                showError('The app is taking longer than expected to load. This may be due to a slow internet connection or JavaScript error.');
+                showError('The app is taking longer than expected to load. This may be due to a slow internet connection or a JavaScript error.');
             }
-        }, 20000);
+        }, 15000);
         
         // Listen for React app ready signal
         window.addEventListener('message', function(event) {
             if (event.data === 'app-ready') {
                 console.log('Received app-ready message');
-                setTimeout(hideLoading, 300);
+                setTimeout(hideLoading, 500);
             }
         });
         
-        // Also check when window loads
-        window.addEventListener('load', function() {
-            console.log('Window loaded');
+        // Also check when DOM content loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM content loaded');
             setTimeout(function() {
                 if (!hasAppLoaded) {
                     const root = document.getElementById('root');
@@ -199,7 +221,7 @@
                         hideLoading();
                     }
                 }
-            }, 2000);
+            }, 3000);
         });
         
         // Listen for any JavaScript errors
@@ -208,7 +230,7 @@
             if (!hasAppLoaded) {
                 setTimeout(function() {
                     showError(`JavaScript error: ${event.error?.message || 'Unknown error'}`);
-                }, 1000);
+                }, 2000);
             }
         });
         
@@ -218,17 +240,17 @@
             if (!hasAppLoaded) {
                 setTimeout(function() {
                     showError(`Promise rejection: ${event.reason?.message || 'Unknown error'}`);
-                }, 1000);
+                }, 2000);
             }
         });
         
-        // Force hide loading after 30 seconds regardless
+        // Force hide loading after 25 seconds regardless
         setTimeout(function() {
             if (!hasAppLoaded) {
-                console.log('Force hiding loading after 30 seconds');
+                console.log('Force hiding loading after 25 seconds');
                 hideLoading();
             }
-        }, 30000);
+        }, 25000);
     </script>
 </body>
 </html>
