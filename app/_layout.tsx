@@ -35,6 +35,11 @@ export default function RootLayout() {
       try {
         if (Platform.OS !== 'web') {
           await SplashScreen.hideAsync();
+        } else {
+          // Signal to web that app is ready
+          if (typeof window !== 'undefined') {
+            window.postMessage('app-ready', '*');
+          }
         }
       } catch (error) {
         console.error('Error hiding splash screen:', error);
