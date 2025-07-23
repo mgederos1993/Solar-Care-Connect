@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Calendar, Info } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
+import Colors from '../constants/colors';
 
 type EmptyStateProps = {
   type: 'appointments' | 'demos' | 'generic';
