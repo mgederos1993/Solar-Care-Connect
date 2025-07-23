@@ -21,12 +21,13 @@ Your app will be available at: `https://your-site-name.netlify.app`
 
 ## What's Fixed
 
-✅ **Added missing build:web script**: Now properly defined in package.json
+✅ **Added proper build:web script**: Now uses `expo export --platform web`
 ✅ **Simplified netlify.toml**: Removed complex build commands that were causing failures
-✅ **Fixed Node.js version**: Specified Node 20 consistently
-✅ **Added serve dependency**: For local testing
+✅ **Fixed Node.js version**: Specified Node 20 consistently across all config files
+✅ **Added missing dependencies**: Including @expo/cli and serve
 ✅ **Proper Expo web configuration**: Updated app.json for web builds
 ✅ **Metro config**: Added for better web compatibility
+✅ **Package.json engines**: Specified Node and npm versions
 
 ## Local Development
 
@@ -60,10 +61,10 @@ npm run serve
 
 **"Missing script" errors**:
 - All required scripts are now in package.json
-- `build:web` runs `npx expo export --platform web` to create static files
+- `build:web` runs `expo export --platform web` to create static files
 
 **Node version issues**:
-- Node 20 is specified in `.nvmrc`, `.node-version`, and `netlify.toml`
+- Node 20 is specified in `.nvmrc`, `.node-version`, `netlify.toml`, and `package.json`
 - Netlify will use Node 20 for the build
 
 ## Features
