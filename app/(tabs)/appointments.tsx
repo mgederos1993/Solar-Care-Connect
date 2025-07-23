@@ -1,21 +1,21 @@
 import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 
-import Colors from '@/constants/colors';
-import { mockAppointments } from '@/constants/mockAppointments';
-import { subscriptionPlans } from '@/constants/subscriptionPlans';
-import { useUserStore } from '@/store/userStore';
-import { useSubscriptionStore } from '@/store/subscriptionStore';
-import AppointmentCard from '@/components/AppointmentCard';
-import SubscriptionCard from '@/components/SubscriptionCard';
-import EmptyState from '@/components/EmptyState';
-import { Appointment } from '@/types';
+import Colors from '../../constants/colors';
+import { mockAppointments } from '../../constants/mockAppointments';
+import { subscriptionPlans } from '../../constants/subscriptionPlans';
+// import { useUserStore } from '../../store/userStore'; // Commented out as not currently used
+import { useSubscriptionStore } from '../../store/subscriptionStore';
+import AppointmentCard from '../../components/AppointmentCard';
+import SubscriptionCard from '../../components/SubscriptionCard';
+import EmptyState from '../../components/EmptyState';
+import { Appointment } from '../../types';
 
 export default function AppointmentsScreen() {
   const router = useRouter();
-  const { user } = useUserStore();
+  // const { user } = useUserStore(); // Commented out as not currently used
   const { 
     selectedPlan, 
     isSubscribed, 
@@ -86,7 +86,7 @@ export default function AppointmentsScreen() {
         
         <View style={styles.jotformNote}>
           <Text style={styles.jotformNoteText}>
-            Clicking "Fill Out Application" will open a form to complete your subscription
+            Clicking &quot;Fill Out Application&quot; will open a form to complete your subscription
           </Text>
         </View>
       </View>

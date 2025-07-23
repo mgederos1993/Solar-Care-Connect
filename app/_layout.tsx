@@ -6,8 +6,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
 import { LogBox, Platform } from "react-native";
 
-import Colors from "@/constants/colors";
-import ErrorBoundary from "@/components/ErrorBoundary";
+import Colors from "../constants/colors";
+import ErrorBoundary from "../components/ErrorBoundary";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 if (Platform.OS !== 'web') {

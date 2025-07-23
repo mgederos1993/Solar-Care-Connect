@@ -3,11 +3,11 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { ChevronRight, CreditCard, Bell, HelpCircle, LogOut, User, MapPin, MessageSquare, Mail } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
-import { useUserStore } from '@/store/userStore';
-import { useSubscriptionStore } from '@/store/subscriptionStore';
-import LocationPreferencesModal from '@/components/LocationPreferencesModal';
-import NotificationPreferencesModal from '@/components/NotificationPreferencesModal';
+import Colors from '../constants/colors';
+import { useUserStore } from '../store/userStore';
+import { useSubscriptionStore } from '../store/subscriptionStore';
+import LocationPreferencesModal from '../components/LocationPreferencesModal';
+import NotificationPreferencesModal from '../components/NotificationPreferencesModal';
 
 export default function SettingsScreen() {
   const router = useRouter();

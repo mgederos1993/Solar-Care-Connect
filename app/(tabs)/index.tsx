@@ -4,10 +4,10 @@ import { ArrowRight, Calendar, CheckCircle, Infinity } from 'lucide-react-native
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect } from 'react';
 
-import Colors from '@/constants/colors';
-import { subscriptionPlans } from '@/constants/subscriptionPlans';
-import { useSubscriptionStore } from '@/store/subscriptionStore';
-import { useUserStore } from '@/store/userStore';
+import Colors from '../../constants/colors';
+import { subscriptionPlans } from '../../constants/subscriptionPlans';
+import { useSubscriptionStore } from '../../store/subscriptionStore';
+import { useUserStore } from '../../store/userStore';
 
 export default function HomeScreen() {
   const router = useRouter();

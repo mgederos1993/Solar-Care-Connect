@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Calendar, Clock, MapPin, Phone, User, FileText, CheckCircle, XCircle } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
-import { mockAppointments } from '@/constants/mockAppointments';
-import { Appointment } from '@/types';
+import Colors from '../../constants/colors';
+import { mockAppointments } from '../../constants/mockAppointments';
+import { Appointment } from '../../types';
 
 export default function AppointmentDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

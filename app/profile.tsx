@@ -4,8 +4,8 @@ import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import { Camera, X } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-import Colors from '@/constants/colors';
-import { useUserStore } from '@/store/userStore';
+import Colors from '../constants/colors';
+import { useUserStore } from '../store/userStore';
 
 export default function ProfileScreen() {
   const router = useRouter();
