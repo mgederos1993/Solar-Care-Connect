@@ -1,6 +1,6 @@
 [build]
   publish = "dist"
-  command = "npm install --legacy-peer-deps && node build-simple.js"
+  command = "npm install --legacy-peer-deps && rm -rf .expo && rm -rf node_modules/.cache && node build-simple.js"
 
 [build.environment]
   NODE_VERSION = "20.19.4"
