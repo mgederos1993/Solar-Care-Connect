@@ -20,13 +20,17 @@ process.env.SKIP_PREFLIGHT_CHECK = 'true';
 process.env.EXPO_CLEAR_CACHE = 'true';
 process.env.BABEL_ENV = 'production';
 process.env.NODE_OPTIONS = '--max-old-space-size=4096';
+process.env.EXPO_NO_METRO_LAZY = '1';
+process.env.EXPO_NO_FLIPPER = '1';
+process.env.EXPO_PLATFORM = 'web';
+process.env.EXPO_PUBLIC_USE_STATIC = 'true';
 
 // Start the build process
 startBuild();
 
 function startBuild() {
 
-  const buildProcess = spawn('npx', ['expo', 'export', '--platform', 'web', '--output-dir', 'dist'], {
+  const buildProcess = spawn('npx', ['expo', 'export', '--platform', 'web', '--output-dir', 'dist', '--clear'], {
     stdio: 'inherit',
     env: process.env
   });

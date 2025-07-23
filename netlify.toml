@@ -1,6 +1,6 @@
 [build]
   publish = "dist"
-  command = "npm install --legacy-peer-deps && rm -rf .expo && rm -rf node_modules/.cache && npx expo export --platform web --output-dir dist"
+  command = "npm install --legacy-peer-deps && rm -rf .expo && rm -rf node_modules/.cache && rm -rf dist && node build-simple.js"
 
 [build.environment]
   NODE_VERSION = "20.19.4"
@@ -11,6 +11,11 @@
   SKIP_PREFLIGHT_CHECK = "true"
   EXPO_USE_FAST_RESOLVER = "true"
   EXPO_NO_DOTENV = "1"
+  EXPO_CLEAR_CACHE = "true"
+  EXPO_PLATFORM = "web"
+  EXPO_PUBLIC_USE_STATIC = "true"
+  EXPO_NO_METRO_LAZY = "1"
+  EXPO_NO_FLIPPER = "1"
   NODE_OPTIONS = "--max-old-space-size=4096"
 
 [[redirects]]
