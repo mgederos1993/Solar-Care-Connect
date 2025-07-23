@@ -18,6 +18,8 @@ process.env.NODE_ENV = 'production';
 process.env.EXPO_NO_DOTENV = '1';
 process.env.SKIP_PREFLIGHT_CHECK = 'true';
 process.env.EXPO_CLEAR_CACHE = 'true';
+process.env.BABEL_ENV = 'production';
+process.env.NODE_OPTIONS = '--max-old-space-size=4096';
 
 // Start the build process
 startBuild();
