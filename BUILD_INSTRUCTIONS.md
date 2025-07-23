@@ -1,11 +1,11 @@
-# Build Instructions for Solar Care Connect
+# Fixed Build Instructions for Solar Care Connect
 
 ## Quick Deploy to Netlify
 
 ### 1. Push to GitHub
 ```bash
 git add .
-git commit -m "Fix Netlify deployment with proper build scripts"
+git commit -m "Fix Netlify deployment with proper build configuration"
 git push origin main
 ```
 
@@ -21,11 +21,12 @@ Your app will be available at: `https://your-site-name.netlify.app`
 
 ## What's Fixed
 
-✅ **Missing build:web script**: Added `expo export:web` command
-✅ **Node.js version**: Specified Node 20 in multiple config files
-✅ **Dependency resolution**: Using `--legacy-peer-deps` flag
-✅ **Build configuration**: Proper Expo web build setup
-✅ **Static file serving**: Configured for SPA routing
+✅ **Added missing build:web script**: Now properly defined in package.json
+✅ **Simplified netlify.toml**: Removed complex build commands that were causing failures
+✅ **Fixed Node.js version**: Specified Node 20 consistently
+✅ **Added serve dependency**: For local testing
+✅ **Proper Expo web configuration**: Updated app.json for web builds
+✅ **Metro config**: Added for better web compatibility
 
 ## Local Development
 
@@ -55,11 +56,11 @@ npm run serve
 
 **Build fails with dependency errors**:
 - The `--legacy-peer-deps` flag should resolve React version conflicts
-- Expo will auto-install compatible versions during build
+- All required dependencies are now properly listed
 
 **"Missing script" errors**:
 - All required scripts are now in package.json
-- `build:web` runs `expo export:web` to create static files
+- `build:web` runs `npx expo export --platform web` to create static files
 
 **Node version issues**:
 - Node 20 is specified in `.nvmrc`, `.node-version`, and `netlify.toml`
@@ -80,7 +81,7 @@ Your Solar Care Connect app should now deploy successfully to Netlify! 🚀
 
 1. Push code to GitHub
 2. Connect repository to Netlify
-3. Wait for build to complete (check build logs)
+3. Wait for build to complete (should take 2-3 minutes)
 4. Visit your Netlify URL
 5. App should load without errors
 6. Test on both mobile and desktop browsers
