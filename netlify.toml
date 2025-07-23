@@ -1,12 +1,14 @@
 [build]
   publish = "dist"
-  command = "npm install --legacy-peer-deps && expo export"
+  command = "npm install --legacy-peer-deps && npx expo install --fix && npx expo export --platform web"
 
 [build.environment]
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
   EXPO_USE_FAST_RESOLVER = "1"
   SKIP_PREFLIGHT_CHECK = "true"
+  BABEL_ENV = "production"
+  NODE_ENV = "production"
 
 [[redirects]]
   from = "/*"

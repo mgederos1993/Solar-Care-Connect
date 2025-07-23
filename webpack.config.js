@@ -3,11 +3,10 @@ const createExpoWebpackConfigAsync = require('@expo/webpack-config');
 module.exports = async function (env, argv) {
   const config = await createExpoWebpackConfigAsync(env, argv);
 
-  // Fix import.meta error by ensuring ES5 compatibility
+  // Force ES5 output to avoid import.meta errors
   config.output = {
     ...config.output,
     environment: {
-      // Disable all modern features that cause import.meta issues
       arrowFunction: false,
       bigIntLiteral: false,
       const: false,
@@ -18,8 +17,45 @@ module.exports = async function (env, argv) {
     },
   };
 
-  // Target older browsers to avoid ES module issues
+  // Target ES5 specifically
   config.target = ['web', 'es5'];
+
+  // Add babel-loader configuration to ensure ES5 transpilation
+  config.module.rules.push({
+    test: /\.(js|jsx|ts|tsx)$/,
+    exclude: /node_modules\/(?!(expo|@expo|react-native|@react-native|@unimodules|unimodules|expo-router|@react-navigation))/,
+    use: {
+      loader: 'babel-loader',
+      options: {
+        presets: [
+          ['@babel/preset-env', {
+            targets: {
+              browsers: ['> 1%', 'last 2 versions', 'ie >= 11']
+            },
+            modules: false,
+            useBuiltIns: 'entry',
+            corejs: 3,
+            exclude: ['transform-typeof-symbol']
+          }],
+          '@babel/preset-react',
+          '@babel/preset-typescript'
+        ],
+        plugins: [
+          '@babel/plugin-proposal-class-properties',
+          '@babel/plugin-transform-runtime',
+          ['@babel/plugin-transform-modules-commonjs', { allowTopLevelThis: true }]
+        ]
+      }
+    }
+  });
+
+  // Disable problematic optimizations that can cause import.meta issues
+  if (config.optimization) {
+    config.optimization.usedExports = false;
+    config.optimization.sideEffects = false;
+    config.optimization.concatenateModules = false;
+    config.optimization.minimize = false; // Disable minification to avoid ES6+ syntax
+  }
 
   // Ensure proper module resolution
   config.resolve = {
@@ -29,39 +65,6 @@ module.exports = async function (env, argv) {
       'react-native$': 'react-native-web',
     },
   };
-
-  // Disable problematic optimizations
-  if (config.optimization) {
-    config.optimization.usedExports = false;
-    config.optimization.sideEffects = false;
-    config.optimization.concatenateModules = false;
-  }
-
-  // Ensure all modules are transpiled to ES5
-  config.module.rules.forEach(rule => {
-    if (rule.use && Array.isArray(rule.use)) {
-      rule.use.forEach(use => {
-        if (use.loader && use.loader.includes('babel-loader')) {
-          use.options = {
-            ...use.options,
-            presets: [
-              ['@babel/preset-env', {
-                targets: {
-                  browsers: ['> 1%', 'last 2 versions', 'ie >= 11']
-                },
-                modules: false,
-                useBuiltIns: 'entry',
-                corejs: 3
-              }],
-              ...(use.options.presets || []).filter(preset => 
-                !Array.isArray(preset) || preset[0] !== '@babel/preset-env'
-              )
-            ]
-          };
-        }
-      });
-    }
-  });
 
   return config;
 };
