@@ -1,15 +1,5 @@
 {
-  "presets": [
-    [
-      "babel-preset-expo",
-      {
-        "jsxImportSource": "react",
-        "web": {
-          "useTransformReactJSXExperimental": false
-        }
-      }
-    ]
-  ],
+  "presets": ["babel-preset-expo"],
   "plugins": [
     [
       "module-resolver",
@@ -20,12 +10,5 @@
         }
       }
     ]
-  ],
-  "env": {
-    "production": {
-      "plugins": [
-        ["transform-remove-console", { "exclude": ["error", "warn"] }]
-      ]
-    }
-  }
+  ]
 }
