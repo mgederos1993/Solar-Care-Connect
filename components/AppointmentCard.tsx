@@ -1,8 +1,8 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Calendar, Clock, MapPin, Phone } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
-import { Appointment } from '@/types';
+import Colors from '../constants/colors';
+import { Appointment } from '../types';
 
 type AppointmentCardProps = {
   appointment: Appointment;

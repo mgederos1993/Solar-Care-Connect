@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
-import { UserProfile } from '@/types';
-import { SubscriptionPlan } from '@/constants/subscriptionPlans';
+import { UserProfile } from '../types';
+import { SubscriptionPlan } from '../constants/subscriptionPlans';
 
 // Simple notification service - just sends basic notifications
 const WEBHOOK_URL = 'https://hook.us1.make.com/your-webhook-url'; // Replace with your Make.com webhook URL

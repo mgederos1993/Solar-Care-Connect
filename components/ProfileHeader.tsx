@@ -1,8 +1,8 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Settings } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
-import { UserProfile } from '@/types';
+import Colors from '../constants/colors';
+import { UserProfile } from '../types';
 
 type ProfileHeaderProps = {
   user: UserProfile;

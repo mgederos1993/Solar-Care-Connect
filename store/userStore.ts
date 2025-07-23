@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Platform } from 'react-native';
 
-import { UserProfile } from '@/types';
+import { UserProfile } from '../types';
 
 interface UserState {
   user: UserProfile | null;

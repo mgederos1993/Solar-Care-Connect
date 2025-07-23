@@ -1,5 +1,5 @@
-import { Appointment } from '@/constants/mockAppointments';
-import { SubscriptionPlan } from '@/constants/subscriptionPlans';
+import { Appointment } from '../constants/mockAppointments';
+import { SubscriptionPlan } from '../constants/subscriptionPlans';
 
 export type UserProfile = {
   id: string;

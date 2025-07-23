@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { X, Plus, Trash2 } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
-import { LocationPreferences } from '@/store/subscriptionStore';
+import Colors from '../constants/colors';
+import { LocationPreferences } from '../store/subscriptionStore';
 
 type LocationPreferencesModalProps = {
   visible: boolean;

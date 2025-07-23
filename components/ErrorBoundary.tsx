@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { AlertTriangle } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
+import Colors from '../constants/colors';
 
 interface Props {
   children: React.ReactNode;

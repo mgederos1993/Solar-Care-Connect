@@ -3,8 +3,8 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Platform } from 'react-native';
 
-import { subscriptionPlans } from '@/constants/subscriptionPlans';
-import { SubscriptionPlan } from '@/types';
+import { subscriptionPlans } from '../constants/subscriptionPlans';
+import { SubscriptionPlan } from '../types';
 
 export type LocationPreferences = {
   cities: string[];

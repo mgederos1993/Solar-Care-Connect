@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { X, Mail, MessageSquare } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
-import { NotificationPreferences } from '@/store/subscriptionStore';
+import Colors from '../constants/colors';
+import { NotificationPreferences } from '../store/subscriptionStore';
 
 type NotificationPreferencesModalProps = {
   visible: boolean;

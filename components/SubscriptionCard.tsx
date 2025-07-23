@@ -1,8 +1,8 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Check, Infinity } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
-import { SubscriptionPlan } from '@/types';
+import Colors from '../constants/colors';
+import { SubscriptionPlan } from '../types';
 
 type SubscriptionCardProps = {
   plan: SubscriptionPlan;
