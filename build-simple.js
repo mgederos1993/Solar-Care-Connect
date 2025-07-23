@@ -12,6 +12,10 @@ console.log('- app directory exists:', fs.existsSync('app'));
 console.log('- package.json exists:', fs.existsSync('package.json'));
 console.log('- app.json exists:', fs.existsSync('app.json'));
 
+// Pre-process files to handle import.meta
+console.log('Pre-processing files to handle import.meta...');
+preprocessImportMeta();
+
 // Set environment variables
 process.env.EXPO_USE_FAST_RESOLVER = 'true';
 process.env.NODE_ENV = 'production';
@@ -27,10 +31,79 @@ process.env.EXPO_PUBLIC_USE_STATIC = 'true';
 process.env.EXPO_USE_METRO_REQUIRE = 'true';
 process.env.EXPO_NO_IMPORT_META = 'true';
 
+function preprocessImportMeta() {
+  const processFile = (filePath) => {
+    if (!fs.existsSync(filePath)) return;
+    
+    let content = fs.readFileSync(filePath, 'utf8');
+    
+    // Replace import.meta.env with process.env
+    content = content.replace(/import\.meta\.env/g, 'process.env');
+    
+    // Replace import.meta.url with a fallback
+    content = content.replace(/import\.meta\.url/g, '""');
+    
+    // Replace other import.meta usages
+    content = content.replace(/import\.meta/g, '{}');
+    
+    fs.writeFileSync(filePath, content);
+  };
+  
+  const processDirectory = (dir) => {
+    if (!fs.existsSync(dir)) return;
+    
+    const items = fs.readdirSync(dir);
+    
+    for (const item of items) {
+      const fullPath = path.join(dir, item);
+      const stat = fs.statSync(fullPath);
+      
+      if (stat.isDirectory() && !item.startsWith('.') && item !== 'node_modules') {
+        processDirectory(fullPath);
+      } else if (stat.isFile() && (item.endsWith('.js') || item.endsWith('.ts') || item.endsWith('.tsx'))) {
+        processFile(fullPath);
+      }
+    }
+  };
+  
+  // Process app directory
+  processDirectory('./app');
+  processDirectory('./components');
+  processDirectory('./constants');
+  processDirectory('./store');
+  processDirectory('./types');
+  processDirectory('./utils');
+}
+
 // Start the build process
 startBuild();
 
 function startBuild() {
+  // First, try to create a temporary metro config to handle module resolution
+  const metroConfig = `const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
+
+const config = getDefaultConfig(__dirname);
+
+// Add support for path aliases
+config.resolver.alias = {
+  '@': path.resolve(__dirname, './'),
+};
+
+// Ensure proper module resolution
+config.resolver.platforms = ['web', 'native', 'ios', 'android'];
+
+// Add web-specific configurations
+if (process.env.EXPO_PLATFORM === 'web') {
+  config.resolver.resolverMainFields = ['browser', 'main'];
+  config.resolver.platforms = ['web', 'native'];
+}
+
+module.exports = config;`;
+  
+  // Write temporary metro config
+  fs.writeFileSync('metro.config.js', metroConfig);
+  
   const buildArgs = [
     'expo', 'export', 
     '--platform', 'web', 
@@ -53,6 +126,11 @@ function startBuild() {
   buildProcess.on('close', (code) => {
     clearTimeout(timeout);
     
+    // Clean up temporary metro config
+    if (fs.existsSync('metro.config.js')) {
+      fs.unlinkSync('metro.config.js');
+    }
+    
     if (code === 0) {
       // Verify the build output
       const distPath = path.join(process.cwd(), 'dist');
@@ -74,6 +152,12 @@ function startBuild() {
 
   buildProcess.on('error', (error) => {
     clearTimeout(timeout);
+    
+    // Clean up temporary metro config
+    if (fs.existsSync('metro.config.js')) {
+      fs.unlinkSync('metro.config.js');
+    }
+    
     console.error('Build process error:', error);
     process.exit(1);
   });
