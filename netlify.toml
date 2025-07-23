@@ -1,6 +1,6 @@
 [build]
   publish = "dist"
-  command = "npm install --legacy-peer-deps && npx expo export --platform web"
+  command = "npm install --legacy-peer-deps && node build.js"
 
 [build.environment]
   NODE_VERSION = "20.19.4"
