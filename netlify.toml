@@ -7,8 +7,6 @@
   NPM_FLAGS = "--legacy-peer-deps"
   NODE_ENV = "production"
   SKIP_PREFLIGHT_CHECK = "true"
-  EXPO_USE_FAST_RESOLVER = "true"
-  EXPO_USE_METRO_WORKSPACE_ROOT = "true"
 
 [[redirects]]
   from = "/*"
