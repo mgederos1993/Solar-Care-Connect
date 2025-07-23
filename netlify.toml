@@ -1,6 +1,6 @@
 [build]
   publish = "dist"
-  command = "npm install --legacy-peer-deps && npx expo export --platform web"
+  command = "npm install --legacy-peer-deps && npm run build:web"
 
 [build.environment]
   NODE_VERSION = "20"
@@ -8,6 +8,7 @@
   NODE_ENV = "production"
   SKIP_PREFLIGHT_CHECK = "true"
   EXPO_USE_FAST_RESOLVER = "true"
+  EXPO_USE_METRO_WORKSPACE_ROOT = "true"
 
 [[redirects]]
   from = "/*"
