@@ -8,6 +8,7 @@
   SKIP_PREFLIGHT_CHECK = "true"
   NODE_ENV = "production"
   EXPO_USE_FAST_RESOLVER = "true"
+  CI = "true"
 
 [[redirects]]
   from = "/*"
