@@ -3,11 +3,13 @@
   command = "npm install --legacy-peer-deps && npm run build:web"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "20.19.4"
+  NPM_VERSION = "10.8.2"
   NPM_FLAGS = "--legacy-peer-deps"
   NODE_ENV = "production"
   SKIP_PREFLIGHT_CHECK = "true"
   EXPO_USE_FAST_RESOLVER = "true"
+  EXPO_NO_DOTENV = "1"
 
 [[redirects]]
   from = "/*"
