@@ -3,7 +3,10 @@
     [
       "babel-preset-expo",
       {
-        "jsxImportSource": "react"
+        "jsxImportSource": "react",
+        "web": {
+          "useTransformReactJSXExperimental": false
+        }
       }
     ]
   ],
@@ -17,5 +20,12 @@
         }
       }
     ]
-  ]
+  ],
+  "env": {
+    "production": {
+      "plugins": [
+        ["transform-remove-console", { "exclude": ["error", "warn"] }]
+      ]
+    }
+  }
 }

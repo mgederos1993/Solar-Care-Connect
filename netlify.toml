@@ -16,6 +16,8 @@
   EXPO_PUBLIC_USE_STATIC = "true"
   EXPO_NO_METRO_LAZY = "1"
   EXPO_NO_FLIPPER = "1"
+  EXPO_USE_METRO_REQUIRE = "true"
+  EXPO_NO_IMPORT_META = "true"
   NODE_OPTIONS = "--max-old-space-size=4096"
 
 [[redirects]]
