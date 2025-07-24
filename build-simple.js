@@ -16,12 +16,9 @@ console.log('- app.json exists:', fs.existsSync('app.json'));
 console.log('Pre-processing files to handle import.meta...');
 preprocessImportMeta();
 
-// Create a temporary metro config if it doesn't exist
+// Skip creating metro config - use default Expo configuration
 const metroConfigExisted = fs.existsSync('metro.config.js');
-if (!metroConfigExisted) {
-  console.log('Creating temporary metro.config.js...');
-  createMetroConfig();
-}
+console.log('Metro config exists:', metroConfigExisted);
 
 // Set environment variables
 process.env.EXPO_USE_FAST_RESOLVER = 'true';
@@ -40,6 +37,9 @@ process.env.EXPO_NO_IMPORT_META = 'true';
 process.env.EXPO_USE_STATIC = 'true';
 process.env.EXPO_SKIP_MANIFEST_VALIDATION_WARNINGS = 'true';
 process.env.EXPO_WEB_BUILD_CACHE = 'false';
+// Additional environment variables to help with Metro issues
+process.env.EXPO_NO_METRO_TERMINAL_REPORTER = 'true';
+process.env.METRO_NO_TERMINAL_REPORTER = 'true';
 
 function preprocessImportMeta() {
   const processFile = (filePath) => {
@@ -126,47 +126,7 @@ function preprocessImportMeta() {
   }
 }
 
-function createMetroConfig() {
-  const metroConfig = `const { getDefaultConfig } = require('expo/metro-config');
-const path = require('path');
-
-const config = getDefaultConfig(__dirname);
-
-// Add support for path aliases
-config.resolver.alias = {
-  '@': path.resolve(__dirname, './'),
-};
-
-// Ensure proper module resolution
-config.resolver.platforms = ['web', 'native', 'ios', 'android'];
-
-// Add web-specific configurations
-if (process.env.EXPO_PLATFORM === 'web') {
-  config.resolver.resolverMainFields = ['browser', 'main'];
-  config.resolver.platforms = ['web', 'native'];
-  
-  // Add transformer options for web
-  config.transformer = {
-    ...config.transformer,
-    minifierConfig: {
-      keep_fnames: true,
-      mangle: {
-        keep_fnames: true,
-      },
-    },
-  };
-}
-
-// Handle import.meta transformations
-config.transformer = {
-  ...config.transformer,
-  babelTransformerPath: require.resolve('metro-react-native-babel-transformer'),
-};
-
-module.exports = config;`;
-  
-  fs.writeFileSync('metro.config.js', metroConfig);
-}
+// Removed createMetroConfig function - using default Expo configuration
 
 // Start the build process
 startBuild();
@@ -195,11 +155,6 @@ function startBuild() {
   buildProcess.on('close', (code) => {
     clearTimeout(timeout);
     
-    // Clean up temporary metro config only if we created it
-    if (!metroConfigExisted && fs.existsSync('metro.config.js')) {
-      fs.unlinkSync('metro.config.js');
-    }
-    
     if (code === 0) {
       // Verify the build output
       const distPath = path.join(process.cwd(), 'dist');
@@ -221,11 +176,6 @@ function startBuild() {
 
   buildProcess.on('error', (error) => {
     clearTimeout(timeout);
-    
-    // Clean up temporary metro config only if we created it
-    if (!metroConfigExisted && fs.existsSync('metro.config.js')) {
-      fs.unlinkSync('metro.config.js');
-    }
     
     console.error('Build process error:', error);
     process.exit(1);
