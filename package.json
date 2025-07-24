@@ -8,6 +8,7 @@
     "start-web-dev": "DEBUG=expo* bunx rork start -p v63wr4ctspi0c65bxyc4f --web --tunnel"
   },
   "dependencies": {
+    "@expo/metro-config": "^0.20.17",
     "@expo/vector-icons": "^14.1.0",
     "@nkzw/create-context-hook": "^1.1.0",
     "@react-native-async-storage/async-storage": "2.1.2",
@@ -33,6 +34,9 @@
     "expo-system-ui": "~5.0.6",
     "expo-web-browser": "~14.1.6",
     "lucide-react-native": "^0.475.0",
+    "metro": "^0.83.0",
+    "metro-config": "^0.83.0",
+    "metro-react-native-babel-transformer": "^0.77.0",
     "nativewind": "^4.1.23",
     "react": "19.0.0",
     "react-dom": "19.0.0",
