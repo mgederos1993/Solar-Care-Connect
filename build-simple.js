@@ -26,7 +26,7 @@ if (!metroConfigExisted) {
 // Set environment variables
 process.env.EXPO_USE_FAST_RESOLVER = 'true';
 process.env.NODE_ENV = 'production';
-process.env.BABEL_ENV = 'production';
+process.env.BABEL_ENV = 'web';
 process.env.EXPO_NO_DOTENV = '1';
 process.env.SKIP_PREFLIGHT_CHECK = 'true';
 process.env.EXPO_CLEAR_CACHE = 'true';
@@ -39,49 +39,91 @@ process.env.EXPO_USE_METRO_REQUIRE = 'true';
 process.env.EXPO_NO_IMPORT_META = 'true';
 process.env.EXPO_USE_STATIC = 'true';
 process.env.EXPO_SKIP_MANIFEST_VALIDATION_WARNINGS = 'true';
+process.env.EXPO_WEB_BUILD_CACHE = 'false';
 
 function preprocessImportMeta() {
   const processFile = (filePath) => {
     if (!fs.existsSync(filePath)) return;
     
-    let content = fs.readFileSync(filePath, 'utf8');
-    
-    // Replace import.meta.env with process.env
-    content = content.replace(/import\.meta\.env/g, 'process.env');
-    
-    // Replace import.meta.url with a fallback
-    content = content.replace(/import\.meta\.url/g, '""');
-    
-    // Replace other import.meta usages
-    content = content.replace(/import\.meta/g, '{}');
-    
-    fs.writeFileSync(filePath, content);
+    try {
+      let content = fs.readFileSync(filePath, 'utf8');
+      let modified = false;
+      
+      // Replace import.meta.env with process.env
+      if (content.includes('import.meta.env')) {
+        content = content.replace(/import\.meta\.env/g, 'process.env');
+        modified = true;
+      }
+      
+      // Replace import.meta.url with a fallback
+      if (content.includes('import.meta.url')) {
+        content = content.replace(/import\.meta\.url/g, '""');
+        modified = true;
+      }
+      
+      // Replace import.meta.hot with undefined
+      if (content.includes('import.meta.hot')) {
+        content = content.replace(/import\.meta\.hot/g, 'undefined');
+        modified = true;
+      }
+      
+      // Replace any remaining import.meta usages
+      if (content.includes('import.meta')) {
+        content = content.replace(/import\.meta/g, '{}');
+        modified = true;
+      }
+      
+      if (modified) {
+        fs.writeFileSync(filePath, content);
+        console.log(`Processed import.meta in: ${filePath}`);
+      }
+    } catch (error) {
+      console.warn(`Warning: Could not process file ${filePath}:`, error.message);
+    }
   };
   
   const processDirectory = (dir) => {
     if (!fs.existsSync(dir)) return;
     
-    const items = fs.readdirSync(dir);
-    
-    for (const item of items) {
-      const fullPath = path.join(dir, item);
-      const stat = fs.statSync(fullPath);
+    try {
+      const items = fs.readdirSync(dir);
       
-      if (stat.isDirectory() && !item.startsWith('.') && item !== 'node_modules') {
-        processDirectory(fullPath);
-      } else if (stat.isFile() && (item.endsWith('.js') || item.endsWith('.ts') || item.endsWith('.tsx'))) {
-        processFile(fullPath);
+      for (const item of items) {
+        const fullPath = path.join(dir, item);
+        
+        try {
+          const stat = fs.statSync(fullPath);
+          
+          if (stat.isDirectory() && !item.startsWith('.') && item !== 'node_modules' && item !== 'dist') {
+            processDirectory(fullPath);
+          } else if (stat.isFile() && (item.endsWith('.js') || item.endsWith('.ts') || item.endsWith('.tsx') || item.endsWith('.jsx'))) {
+            processFile(fullPath);
+          }
+        } catch (statError) {
+          console.warn(`Warning: Could not stat ${fullPath}:`, statError.message);
+        }
       }
+    } catch (error) {
+      console.warn(`Warning: Could not read directory ${dir}:`, error.message);
     }
   };
   
-  // Process app directory
-  processDirectory('./app');
-  processDirectory('./components');
-  processDirectory('./constants');
-  processDirectory('./store');
-  processDirectory('./types');
-  processDirectory('./utils');
+  // Process all relevant directories
+  const dirsToProcess = ['./app', './components', './constants', './store', './types', './utils'];
+  
+  for (const dir of dirsToProcess) {
+    if (fs.existsSync(dir)) {
+      console.log(`Processing directory: ${dir}`);
+      processDirectory(dir);
+    }
+  }
+  
+  // Also process node_modules/expo-router if it exists and contains import.meta
+  const expoRouterPath = './node_modules/expo-router';
+  if (fs.existsSync(expoRouterPath)) {
+    console.log('Processing expo-router for import.meta...');
+    processDirectory(expoRouterPath);
+  }
 }
 
 function createMetroConfig() {
@@ -102,7 +144,24 @@ config.resolver.platforms = ['web', 'native', 'ios', 'android'];
 if (process.env.EXPO_PLATFORM === 'web') {
   config.resolver.resolverMainFields = ['browser', 'main'];
   config.resolver.platforms = ['web', 'native'];
+  
+  // Add transformer options for web
+  config.transformer = {
+    ...config.transformer,
+    minifierConfig: {
+      keep_fnames: true,
+      mangle: {
+        keep_fnames: true,
+      },
+    },
+  };
 }
+
+// Handle import.meta transformations
+config.transformer = {
+  ...config.transformer,
+  babelTransformerPath: require.resolve('metro-react-native-babel-transformer'),
+};
 
 module.exports = config;`;
   

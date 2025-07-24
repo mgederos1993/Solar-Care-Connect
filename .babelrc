@@ -1,5 +1,14 @@
 {
-  "presets": ["babel-preset-expo"],
+  "presets": [
+    [
+      "babel-preset-expo",
+      {
+        "web": {
+          "useTransformReactJSXExperimental": false
+        }
+      }
+    ]
+  ],
   "plugins": [
     [
       "module-resolver",
@@ -18,6 +27,19 @@
           "babel-plugin-transform-remove-console",
           {
             "exclude": ["error", "warn"]
+          }
+        ]
+      ]
+    },
+    "web": {
+      "presets": [
+        [
+          "babel-preset-expo",
+          {
+            "web": {
+              "useTransformReactJSXExperimental": false,
+              "disableImportExportTransform": false
+            }
           }
         ]
       ]

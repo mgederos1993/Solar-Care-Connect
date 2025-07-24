@@ -7,7 +7,7 @@
   NPM_VERSION = "10.8.2"
   NPM_FLAGS = "--legacy-peer-deps"
   NODE_ENV = "production"
-  BABEL_ENV = "production"
+  BABEL_ENV = "web"
   SKIP_PREFLIGHT_CHECK = "true"
   EXPO_USE_FAST_RESOLVER = "true"
   EXPO_NO_DOTENV = "1"
@@ -18,7 +18,10 @@
   EXPO_NO_FLIPPER = "1"
   EXPO_USE_METRO_REQUIRE = "true"
   EXPO_NO_IMPORT_META = "true"
+  EXPO_USE_STATIC = "true"
+  EXPO_SKIP_MANIFEST_VALIDATION_WARNINGS = "true"
   NODE_OPTIONS = "--max-old-space-size=4096"
+  EXPO_WEB_BUILD_CACHE = "false"
 
 [[redirects]]
   from = "/*"
