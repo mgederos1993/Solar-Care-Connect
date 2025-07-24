@@ -3,7 +3,7 @@
   command = "npm install --legacy-peer-deps && rm -rf .expo && rm -rf node_modules/.cache && rm -rf dist && node build-simple.js"
 
 [build.environment]
-  NODE_VERSION = "20.19.4"
+  NODE_VERSION = "22.14.0"
   NPM_VERSION = "10.8.2"
   NPM_FLAGS = "--legacy-peer-deps"
   NODE_ENV = "production"
