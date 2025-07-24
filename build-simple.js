@@ -16,6 +16,13 @@ console.log('- app.json exists:', fs.existsSync('app.json'));
 console.log('Pre-processing files to handle import.meta...');
 preprocessImportMeta();
 
+// Create a temporary metro config if it doesn't exist
+const metroConfigExisted = fs.existsSync('metro.config.js');
+if (!metroConfigExisted) {
+  console.log('Creating temporary metro.config.js...');
+  createMetroConfig();
+}
+
 // Set environment variables
 process.env.EXPO_USE_FAST_RESOLVER = 'true';
 process.env.NODE_ENV = 'production';
@@ -30,6 +37,8 @@ process.env.EXPO_PLATFORM = 'web';
 process.env.EXPO_PUBLIC_USE_STATIC = 'true';
 process.env.EXPO_USE_METRO_REQUIRE = 'true';
 process.env.EXPO_NO_IMPORT_META = 'true';
+process.env.EXPO_USE_STATIC = 'true';
+process.env.EXPO_SKIP_MANIFEST_VALIDATION_WARNINGS = 'true';
 
 function preprocessImportMeta() {
   const processFile = (filePath) => {
@@ -75,11 +84,7 @@ function preprocessImportMeta() {
   processDirectory('./utils');
 }
 
-// Start the build process
-startBuild();
-
-function startBuild() {
-  // First, try to create a temporary metro config to handle module resolution
+function createMetroConfig() {
   const metroConfig = `const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 
@@ -101,8 +106,13 @@ if (process.env.EXPO_PLATFORM === 'web') {
 
 module.exports = config;`;
   
-  // Write temporary metro config
   fs.writeFileSync('metro.config.js', metroConfig);
+}
+
+// Start the build process
+startBuild();
+
+function startBuild() {
   
   const buildArgs = [
     'expo', 'export', 
@@ -126,8 +136,8 @@ module.exports = config;`;
   buildProcess.on('close', (code) => {
     clearTimeout(timeout);
     
-    // Clean up temporary metro config
-    if (fs.existsSync('metro.config.js')) {
+    // Clean up temporary metro config only if we created it
+    if (!metroConfigExisted && fs.existsSync('metro.config.js')) {
       fs.unlinkSync('metro.config.js');
     }
     
@@ -153,8 +163,8 @@ module.exports = config;`;
   buildProcess.on('error', (error) => {
     clearTimeout(timeout);
     
-    // Clean up temporary metro config
-    if (fs.existsSync('metro.config.js')) {
+    // Clean up temporary metro config only if we created it
+    if (!metroConfigExisted && fs.existsSync('metro.config.js')) {
       fs.unlinkSync('metro.config.js');
     }
     
