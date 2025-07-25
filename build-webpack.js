@@ -4,7 +4,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('Starting webpack build process...');
+console.log('Starting Metro build process...');
 console.log('Node version:', process.version);
 console.log('Current directory:', process.cwd());
 
@@ -109,7 +109,7 @@ function preprocessImportMeta() {
 }
 
 function createAppJson() {
-  console.log('Creating temporary app.json for webpack build...');
+  console.log('Creating temporary app.json for Metro build...');
   
   const appJsonPath = './app.json';
   let appConfig = {};
@@ -124,17 +124,22 @@ function createAppJson() {
     }
   }
   
-  // Ensure web configuration with webpack bundler
+  // Ensure web configuration with metro bundler
   appConfig.expo = appConfig.expo || {};
   appConfig.expo.web = appConfig.expo.web || {};
-  appConfig.expo.web.bundler = 'webpack';
-  appConfig.expo.web.build = appConfig.expo.web.build || {};
-  appConfig.expo.web.build.babel = appConfig.expo.web.build.babel || {};
-  appConfig.expo.web.build.babel.dangerouslyAllowSyntaxErrors = true;
+  appConfig.expo.web.bundler = 'metro';
+  
+  // Add platforms configuration
+  appConfig.expo.platforms = appConfig.expo.platforms || ['ios', 'android', 'web'];
+  
+  // Ensure web is included in platforms
+  if (!appConfig.expo.platforms.includes('web')) {
+    appConfig.expo.platforms.push('web');
+  }
   
   try {
     fs.writeFileSync(appJsonPath, JSON.stringify(appConfig, null, 2));
-    console.log('Updated app.json for webpack build');
+    console.log('Updated app.json for Metro build');
     return true;
   } catch (error) {
     console.warn('Warning: Could not update app.json:', error.message);
@@ -142,15 +147,15 @@ function createAppJson() {
   }
 }
 
-function startWebpackBuild() {
-  console.log('Starting webpack build...');
+function startMetroBuild() {
+  console.log('Starting Metro build...');
   
   // Try multiple build commands in order of preference
   const buildCommands = [
-    ['npx', ['expo', 'export:web', '--output-dir', 'dist']],
-    ['expo', ['export:web', '--output-dir', 'dist']],
-    ['npx', ['expo', 'build:web']],
-    ['expo', ['build:web']]
+    ['npx', ['expo', 'export', '--platform', 'web', '--output-dir', 'dist']],
+    ['expo', ['export', '--platform', 'web', '--output-dir', 'dist']],
+    ['npx', ['expo', 'export:web']],
+    ['expo', ['export:web']]
   ];
   
   let currentCommandIndex = 0;
@@ -235,11 +240,11 @@ async function main() {
     // Step 1: Preprocess import.meta
     preprocessImportMeta();
     
-    // Step 2: Update app.json for webpack build
+    // Step 2: Update app.json for Metro build
     createAppJson();
     
-    // Step 3: Start the webpack build
-    startWebpackBuild();
+    // Step 3: Start the Metro build
+    startMetroBuild();
     
   } catch (error) {
     console.error('Build process failed:', error);
