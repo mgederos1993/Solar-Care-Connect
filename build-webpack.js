@@ -4,38 +4,18 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('Starting alternative build process...');
+console.log('Starting webpack-based build process...');
 console.log('Node version:', process.version);
 console.log('Current directory:', process.cwd());
 
-// Set comprehensive environment variables
-process.env.EXPO_USE_FAST_RESOLVER = 'true';
+// Set environment variables for webpack build
 process.env.NODE_ENV = 'production';
 process.env.BABEL_ENV = 'web';
-process.env.EXPO_NO_DOTENV = '1';
-process.env.SKIP_PREFLIGHT_CHECK = 'true';
-process.env.EXPO_CLEAR_CACHE = 'true';
-process.env.NODE_OPTIONS = '--max-old-space-size=4096';
 process.env.EXPO_PLATFORM = 'web';
 process.env.EXPO_PUBLIC_USE_STATIC = 'true';
-process.env.EXPO_USE_METRO_REQUIRE = 'true';
-process.env.EXPO_NO_IMPORT_META = 'true';
 process.env.EXPO_USE_STATIC = 'true';
-process.env.EXPO_SKIP_MANIFEST_VALIDATION_WARNINGS = 'true';
-process.env.EXPO_WEB_BUILD_CACHE = 'false';
-
-// Metro-specific environment variables to bypass TerminalReporter
-process.env.EXPO_NO_METRO_TERMINAL_REPORTER = 'true';
-process.env.METRO_NO_TERMINAL_REPORTER = 'true';
-process.env.METRO_NO_TERMINAL = '1';
-process.env.EXPO_NO_METRO_LAZY = '1';
-process.env.EXPO_NO_FLIPPER = '1';
-process.env.METRO_REPORTER = 'null';
-process.env.EXPO_METRO_NO_MAIN_FIELDS = '1';
-
-// Additional flags to help with the build
-process.env.EXPO_SKIP_MANIFEST_VALIDATION = 'true';
-process.env.EXPO_NO_METRO_REQUIRE_CYCLE_CHECK = 'true';
+process.env.SKIP_PREFLIGHT_CHECK = 'true';
+process.env.NODE_OPTIONS = '--max-old-space-size=4096';
 
 function preprocessImportMeta() {
   console.log('Pre-processing files to handle import.meta...');
@@ -124,59 +104,72 @@ function preprocessImportMeta() {
   }
 }
 
-function createCustomMetroConfig() {
-  console.log('Creating custom metro.config.js...');
+function createWebpackConfig() {
+  console.log('Creating webpack.config.js...');
   
-  const metroConfig = `const { getDefaultConfig } = require('expo/metro-config');
+  const webpackConfig = `const createExpoWebpackConfigAsync = require('@expo/webpack-config');
 
-const config = getDefaultConfig(__dirname);
-
-// Disable terminal reporter completely
-config.reporter = null;
-
-// Ensure web platform is supported
-config.resolver.platforms = ['ios', 'android', 'native', 'web'];
-
-// Add web extensions
-config.resolver.sourceExts = [...(config.resolver.sourceExts || []), 'web.js', 'web.ts', 'web.tsx'];
-
-// Disable features that might cause issues
-config.transformer = {
-  ...config.transformer,
-  minifierConfig: {
-    keep_fnames: true,
-    mangle: {
-      keep_fnames: true,
+module.exports = async function (env, argv) {
+  const config = await createExpoWebpackConfigAsync({
+    ...env,
+    mode: 'production',
+    https: false,
+  }, argv);
+  
+  // Disable source maps for production
+  config.devtool = false;
+  
+  // Optimize bundle
+  config.optimization = {
+    ...config.optimization,
+    minimize: true,
+    splitChunks: {
+      chunks: 'all',
+      cacheGroups: {
+        vendor: {
+          test: /[\\\\/]node_modules[\\\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+        },
+      },
     },
-  },
+  };
+  
+  // Handle import.meta
+  config.module.rules.push({
+    test: /\.(js|jsx|ts|tsx)$/,
+    use: {
+      loader: 'babel-loader',
+      options: {
+        presets: ['@babel/preset-env', '@babel/preset-react', '@babel/preset-typescript'],
+        plugins: [
+          ['@babel/plugin-transform-runtime', { regenerator: true }],
+          ['babel-plugin-transform-import-meta', { module: 'ES6' }]
+        ]
+      }
+    }
+  });
+  
+  return config;
 };
-
-// Disable watchman and other features that might cause issues
-config.watchFolders = [];
-config.resetCache = true;
-
-module.exports = config;
 `;
 
   try {
-    fs.writeFileSync('metro.config.js', metroConfig);
-    console.log('Created custom metro.config.js');
+    fs.writeFileSync('webpack.config.js', webpackConfig);
+    console.log('Created webpack.config.js');
     return true;
   } catch (error) {
-    console.warn('Warning: Could not create metro.config.js:', error.message);
+    console.warn('Warning: Could not create webpack.config.js:', error.message);
     return false;
   }
 }
 
-function startBuild() {
-  console.log('Starting Expo build...');
+function startWebpackBuild() {
+  console.log('Starting webpack build...');
   
   const buildArgs = [
-    'expo', 'export', 
-    '--platform', 'web', 
-    '--output-dir', 'dist', 
-    '--clear',
-    '--no-minify'
+    'expo', 'build:web',
+    '--no-pwa'
   ];
 
   const buildProcess = spawn('npx', buildArgs, {
@@ -194,27 +187,37 @@ function startBuild() {
   buildProcess.on('close', (code) => {
     clearTimeout(timeout);
     
-    // Clean up temporary metro config
-    if (fs.existsSync('metro.config.js')) {
+    // Clean up temporary webpack config
+    if (fs.existsSync('webpack.config.js')) {
       try {
-        fs.unlinkSync('metro.config.js');
-        console.log('Cleaned up temporary metro.config.js');
+        fs.unlinkSync('webpack.config.js');
+        console.log('Cleaned up temporary webpack.config.js');
       } catch (error) {
-        console.warn('Warning: Could not clean up metro.config.js:', error.message);
+        console.warn('Warning: Could not clean up webpack.config.js:', error.message);
       }
     }
     
     if (code === 0) {
-      // Verify the build output
+      // Check for build output in web-build directory
+      const webBuildPath = path.join(process.cwd(), 'web-build');
       const distPath = path.join(process.cwd(), 'dist');
-      const indexPath = path.join(distPath, 'index.html');
       
-      if (fs.existsSync(indexPath)) {
-        console.log('Build completed successfully!');
-        console.log('Output directory:', distPath);
-        process.exit(0);
+      if (fs.existsSync(webBuildPath)) {
+        // Move web-build to dist
+        try {
+          if (fs.existsSync(distPath)) {
+            fs.rmSync(distPath, { recursive: true, force: true });
+          }
+          fs.renameSync(webBuildPath, distPath);
+          console.log('Build completed successfully!');
+          console.log('Output directory:', distPath);
+          process.exit(0);
+        } catch (error) {
+          console.error('Error moving build output:', error);
+          process.exit(1);
+        }
       } else {
-        console.error('Build completed but index.html not found');
+        console.error('Build completed but web-build directory not found');
         process.exit(1);
       }
     } else {
@@ -226,13 +229,13 @@ function startBuild() {
   buildProcess.on('error', (error) => {
     clearTimeout(timeout);
     
-    // Clean up temporary metro config
-    if (fs.existsSync('metro.config.js')) {
+    // Clean up temporary webpack config
+    if (fs.existsSync('webpack.config.js')) {
       try {
-        fs.unlinkSync('metro.config.js');
-        console.log('Cleaned up temporary metro.config.js');
+        fs.unlinkSync('webpack.config.js');
+        console.log('Cleaned up temporary webpack.config.js');
       } catch (cleanupError) {
-        console.warn('Warning: Could not clean up metro.config.js:', cleanupError.message);
+        console.warn('Warning: Could not clean up webpack.config.js:', cleanupError.message);
       }
     }
     
@@ -247,15 +250,15 @@ async function main() {
     // Step 1: Preprocess import.meta
     preprocessImportMeta();
     
-    // Step 2: Create custom metro config
-    const metroConfigCreated = createCustomMetroConfig();
+    // Step 2: Create webpack config
+    const webpackConfigCreated = createWebpackConfig();
     
-    if (!metroConfigCreated) {
-      console.error('Failed to create metro config, continuing without it...');
+    if (!webpackConfigCreated) {
+      console.error('Failed to create webpack config, continuing without it...');
     }
     
-    // Step 3: Start the build
-    startBuild();
+    // Step 3: Start the webpack build
+    startWebpackBuild();
     
   } catch (error) {
     console.error('Build process failed:', error);
@@ -266,11 +269,11 @@ async function main() {
 // Handle process termination gracefully
 process.on('SIGTERM', () => {
   console.log('Received SIGTERM, exiting gracefully...');
-  if (fs.existsSync('metro.config.js')) {
+  if (fs.existsSync('webpack.config.js')) {
     try {
-      fs.unlinkSync('metro.config.js');
+      fs.unlinkSync('webpack.config.js');
     } catch (error) {
-      console.warn('Could not clean up metro.config.js:', error.message);
+      console.warn('Could not clean up webpack.config.js:', error.message);
     }
   }
   process.exit(0);
@@ -278,11 +281,11 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   console.log('Received SIGINT, exiting gracefully...');
-  if (fs.existsSync('metro.config.js')) {
+  if (fs.existsSync('webpack.config.js')) {
     try {
-      fs.unlinkSync('metro.config.js');
+      fs.unlinkSync('webpack.config.js');
     } catch (error) {
-      console.warn('Could not clean up metro.config.js:', error.message);
+      console.warn('Could not clean up webpack.config.js:', error.message);
     }
   }
   process.exit(0);
