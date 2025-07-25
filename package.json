@@ -8,6 +8,7 @@
     "start-web-dev": "DEBUG=expo* bunx rork start -p v63wr4ctspi0c65bxyc4f --web --tunnel"
   },
   "dependencies": {
+    "@babel/preset-env": "^7.28.0",
     "@expo/metro-config": "^0.20.17",
     "@expo/vector-icons": "^14.1.0",
     "@expo/webpack-config": "^19.0.1",
