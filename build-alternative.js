@@ -4,28 +4,11 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('Starting simple build process...');
+console.log('Starting alternative build process...');
 console.log('Node version:', process.version);
 console.log('Current directory:', process.cwd());
-console.log('Project structure check:');
-console.log('- app directory exists:', fs.existsSync('app'));
-console.log('- package.json exists:', fs.existsSync('package.json'));
-console.log('- app.json exists:', fs.existsSync('app.json'));
 
-// Pre-process files to handle import.meta
-console.log('Pre-processing files to handle import.meta...');
-preprocessImportMeta();
-
-// Create a minimal metro config to avoid TerminalReporter issues
-const metroConfigExisted = fs.existsSync('metro.config.js');
-console.log('Metro config exists:', metroConfigExisted);
-
-if (!metroConfigExisted) {
-  console.log('Creating temporary metro.config.js...');
-  createMinimalMetroConfig();
-}
-
-// Set environment variables
+// Set comprehensive environment variables
 process.env.EXPO_USE_FAST_RESOLVER = 'true';
 process.env.NODE_ENV = 'production';
 process.env.BABEL_ENV = 'web';
@@ -33,8 +16,6 @@ process.env.EXPO_NO_DOTENV = '1';
 process.env.SKIP_PREFLIGHT_CHECK = 'true';
 process.env.EXPO_CLEAR_CACHE = 'true';
 process.env.NODE_OPTIONS = '--max-old-space-size=4096';
-process.env.EXPO_NO_METRO_LAZY = '1';
-process.env.EXPO_NO_FLIPPER = '1';
 process.env.EXPO_PLATFORM = 'web';
 process.env.EXPO_PUBLIC_USE_STATIC = 'true';
 process.env.EXPO_USE_METRO_REQUIRE = 'true';
@@ -42,13 +23,21 @@ process.env.EXPO_NO_IMPORT_META = 'true';
 process.env.EXPO_USE_STATIC = 'true';
 process.env.EXPO_SKIP_MANIFEST_VALIDATION_WARNINGS = 'true';
 process.env.EXPO_WEB_BUILD_CACHE = 'false';
-// Additional environment variables to help with Metro issues
+
+// Metro-specific environment variables to bypass TerminalReporter
 process.env.EXPO_NO_METRO_TERMINAL_REPORTER = 'true';
 process.env.METRO_NO_TERMINAL_REPORTER = 'true';
-process.env.EXPO_NO_METRO_LAZY = '1';
 process.env.METRO_NO_TERMINAL = '1';
+process.env.EXPO_NO_METRO_LAZY = '1';
+process.env.EXPO_NO_FLIPPER = '1';
+
+// Additional flags to help with the build
+process.env.EXPO_SKIP_MANIFEST_VALIDATION = 'true';
+process.env.EXPO_NO_METRO_REQUIRE_CYCLE_CHECK = 'true';
 
 function preprocessImportMeta() {
+  console.log('Pre-processing files to handle import.meta...');
+  
   const processFile = (filePath) => {
     if (!fs.existsSync(filePath)) return;
     
@@ -133,14 +122,22 @@ function preprocessImportMeta() {
   }
 }
 
-function createMinimalMetroConfig() {
+function createCustomMetroConfig() {
+  console.log('Creating custom metro.config.js...');
+  
   const metroConfig = `const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
-// Disable terminal reporter to avoid export issues
+// Custom reporter that doesn't use TerminalReporter
 config.reporter = {
-  update: () => {},
+  update: (event) => {
+    if (event.type === 'bundle_build_done') {
+      console.log('Bundle build completed');
+    } else if (event.type === 'bundle_build_failed') {
+      console.error('Bundle build failed');
+    }
+  }
 };
 
 // Ensure web platform is supported
@@ -149,21 +146,32 @@ config.resolver.platforms = ['ios', 'android', 'native', 'web'];
 // Add web extensions
 config.resolver.sourceExts = [...(config.resolver.sourceExts || []), 'web.js', 'web.ts', 'web.tsx'];
 
+// Disable some features that might cause issues
+config.transformer = {
+  ...config.transformer,
+  minifierConfig: {
+    keep_fnames: true,
+    mangle: {
+      keep_fnames: true,
+    },
+  },
+};
+
 module.exports = config;
 `;
 
   try {
     fs.writeFileSync('metro.config.js', metroConfig);
-    console.log('Created minimal metro.config.js');
+    console.log('Created custom metro.config.js');
+    return true;
   } catch (error) {
     console.warn('Warning: Could not create metro.config.js:', error.message);
+    return false;
   }
 }
 
-// Start the build process
-startBuild();
-
 function startBuild() {
+  console.log('Starting Expo build...');
   
   const buildArgs = [
     'expo', 'export', 
@@ -179,16 +187,16 @@ function startBuild() {
 
   // Set a timeout to kill the process if it hangs
   const timeout = setTimeout(() => {
-    console.error('Build process timed out after 10 minutes');
+    console.error('Build process timed out after 15 minutes');
     buildProcess.kill('SIGTERM');
     process.exit(1);
-  }, 10 * 60 * 1000); // 10 minutes
+  }, 15 * 60 * 1000); // 15 minutes
 
   buildProcess.on('close', (code) => {
     clearTimeout(timeout);
     
-    // Clean up temporary metro config if we created it
-    if (!metroConfigExisted && fs.existsSync('metro.config.js')) {
+    // Clean up temporary metro config
+    if (fs.existsSync('metro.config.js')) {
       try {
         fs.unlinkSync('metro.config.js');
         console.log('Cleaned up temporary metro.config.js');
@@ -219,8 +227,8 @@ function startBuild() {
   buildProcess.on('error', (error) => {
     clearTimeout(timeout);
     
-    // Clean up temporary metro config if we created it
-    if (!metroConfigExisted && fs.existsSync('metro.config.js')) {
+    // Clean up temporary metro config
+    if (fs.existsSync('metro.config.js')) {
       try {
         fs.unlinkSync('metro.config.js');
         console.log('Cleaned up temporary metro.config.js');
@@ -234,13 +242,51 @@ function startBuild() {
   });
 }
 
+// Main execution
+async function main() {
+  try {
+    // Step 1: Preprocess import.meta
+    preprocessImportMeta();
+    
+    // Step 2: Create custom metro config
+    const metroConfigCreated = createCustomMetroConfig();
+    
+    if (!metroConfigCreated) {
+      console.error('Failed to create metro config, continuing without it...');
+    }
+    
+    // Step 3: Start the build
+    startBuild();
+    
+  } catch (error) {
+    console.error('Build process failed:', error);
+    process.exit(1);
+  }
+}
+
 // Handle process termination gracefully
 process.on('SIGTERM', () => {
   console.log('Received SIGTERM, exiting gracefully...');
+  if (fs.existsSync('metro.config.js')) {
+    try {
+      fs.unlinkSync('metro.config.js');
+    } catch (error) {
+      console.warn('Could not clean up metro.config.js:', error.message);
+    }
+  }
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   console.log('Received SIGINT, exiting gracefully...');
+  if (fs.existsSync('metro.config.js')) {
+    try {
+      fs.unlinkSync('metro.config.js');
+    } catch (error) {
+      console.warn('Could not clean up metro.config.js:', error.message);
+    }
+  }
   process.exit(0);
 });
+
+main();
