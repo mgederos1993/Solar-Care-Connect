@@ -10,14 +10,15 @@ console.log('Current directory:', process.cwd());
 
 // Set environment variables for static build
 process.env.NODE_ENV = 'production';
-process.env.BABEL_ENV = 'web';
+process.env.BABEL_ENV = 'production';
 process.env.EXPO_PLATFORM = 'web';
 process.env.EXPO_PUBLIC_USE_STATIC = 'true';
 process.env.EXPO_USE_STATIC = 'true';
 process.env.SKIP_PREFLIGHT_CHECK = 'true';
 process.env.NODE_OPTIONS = '--max-old-space-size=4096';
-process.env.EXPO_NO_METRO = 'true';
-process.env.EXPO_USE_WEBPACK = 'true';
+process.env.EXPO_USE_FAST_RESOLVER = 'true';
+process.env.EXPO_NO_DOTENV = '1';
+process.env.EXPO_CLEAR_CACHE = 'true';
 
 function preprocessImportMeta() {
   console.log('Pre-processing files to handle import.meta...');
@@ -143,99 +144,50 @@ function createAppJson() {
 function startStaticBuild() {
   console.log('Starting static build...');
   
-  // Try different build commands in order of preference
-  const buildCommands = [
-    ['expo', 'build:web'],
-    ['expo', 'export:web'],
-    ['npx', 'expo', 'build:web'],
-    ['npx', 'expo', 'export:web']
-  ];
+  // Use the correct export command
+  const command = 'npx';
+  const args = ['expo', 'export', '--platform', 'web', '--output-dir', 'dist'];
   
-  let currentCommandIndex = 0;
+  console.log(`Running build command: ${command} ${args.join(' ')}`);
   
-  function tryNextCommand() {
-    if (currentCommandIndex >= buildCommands.length) {
-      console.error('All build commands failed');
-      process.exit(1);
-      return;
-    }
-    
-    const [command, ...args] = buildCommands[currentCommandIndex];
-    console.log(`Trying build command: ${command} ${args.join(' ')}`);
-    
-    const buildProcess = spawn(command, args, {
-      stdio: 'inherit',
-      env: process.env
-    });
+  const buildProcess = spawn(command, args, {
+    stdio: 'inherit',
+    env: process.env
+  });
 
-    // Set a timeout to kill the process if it hangs
-    const timeout = setTimeout(() => {
-      console.error('Build process timed out after 10 minutes');
-      buildProcess.kill('SIGTERM');
-      currentCommandIndex++;
-      setTimeout(tryNextCommand, 1000);
-    }, 10 * 60 * 1000); // 10 minutes
+  // Set a timeout to kill the process if it hangs
+  const timeout = setTimeout(() => {
+    console.error('Build process timed out after 15 minutes');
+    buildProcess.kill('SIGTERM');
+    process.exit(1);
+  }, 15 * 60 * 1000); // 15 minutes
 
-    buildProcess.on('close', (code) => {
-      clearTimeout(timeout);
+  buildProcess.on('close', (code) => {
+    clearTimeout(timeout);
+    
+    if (code === 0) {
+      const distPath = path.join(process.cwd(), 'dist');
+      const indexPath = path.join(distPath, 'index.html');
       
-      if (code === 0) {
-        // Check for build output in various possible locations
-        const possibleOutputDirs = ['web-build', 'dist', 'build', 'out'];
-        let outputDir = null;
-        
-        for (const dir of possibleOutputDirs) {
-          const fullPath = path.join(process.cwd(), dir);
-          if (fs.existsSync(fullPath)) {
-            const indexPath = path.join(fullPath, 'index.html');
-            if (fs.existsSync(indexPath)) {
-              outputDir = fullPath;
-              break;
-            }
-          }
-        }
-        
-        if (outputDir) {
-          const distPath = path.join(process.cwd(), 'dist');
-          
-          // Move output to dist if it's not already there
-          if (outputDir !== distPath) {
-            try {
-              if (fs.existsSync(distPath)) {
-                fs.rmSync(distPath, { recursive: true, force: true });
-              }
-              fs.renameSync(outputDir, distPath);
-              console.log(`Moved build output from ${path.basename(outputDir)} to dist`);
-            } catch (error) {
-              console.error('Error moving build output:', error);
-              process.exit(1);
-            }
-          }
-          
-          console.log('Build completed successfully!');
-          console.log('Output directory:', distPath);
-          process.exit(0);
-        } else {
-          console.error('Build completed but no valid output directory found');
-          currentCommandIndex++;
-          setTimeout(tryNextCommand, 1000);
-        }
+      if (fs.existsSync(indexPath)) {
+        console.log('Build completed successfully!');
+        console.log('Output directory:', distPath);
+        process.exit(0);
       } else {
-        console.error(`Build command failed with code ${code}`);
-        currentCommandIndex++;
-        setTimeout(tryNextCommand, 1000);
+        console.error('Build completed but no index.html found in dist directory');
+        process.exit(1);
       }
-    });
+    } else {
+      console.error(`Build command failed with code ${code}`);
+      process.exit(1);
+    }
+  });
 
-    buildProcess.on('error', (error) => {
-      clearTimeout(timeout);
-      console.error(`Build command error: ${error.message}`);
-      currentCommandIndex++;
-      setTimeout(tryNextCommand, 1000);
-    });
-  }
-  
-  tryNextCommand();
+  buildProcess.on('error', (error) => {
+    clearTimeout(timeout);
+    console.error(`Build command error: ${error.message}`);
+    process.exit(1);
+  });
 }
 
 // Main execution

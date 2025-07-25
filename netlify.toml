@@ -7,7 +7,7 @@
   NPM_VERSION = "10.8.2"
   NPM_FLAGS = "--legacy-peer-deps"
   NODE_ENV = "production"
-  BABEL_ENV = "web"
+  BABEL_ENV = "production"
   SKIP_PREFLIGHT_CHECK = "true"
   EXPO_USE_FAST_RESOLVER = "true"
   EXPO_NO_DOTENV = "1"
