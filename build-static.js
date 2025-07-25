@@ -123,10 +123,10 @@ function createAppJson() {
     }
   }
   
-  // Ensure web configuration
+  // Ensure web configuration with webpack bundler to avoid metro issues
   appConfig.expo = appConfig.expo || {};
   appConfig.expo.web = appConfig.expo.web || {};
-  appConfig.expo.web.bundler = 'metro';
+  appConfig.expo.web.bundler = 'webpack';
   appConfig.expo.web.build = appConfig.expo.web.build || {};
   appConfig.expo.web.build.babel = appConfig.expo.web.build.babel || {};
   appConfig.expo.web.build.babel.dangerouslyAllowSyntaxErrors = true;
@@ -141,12 +141,51 @@ function createAppJson() {
   }
 }
 
+function createMetroConfig() {
+  console.log('Creating custom metro.config.js...');
+  
+  const metroConfigContent = `
+const { getDefaultConfig } = require('expo/metro-config');
+const { withNativeWind } = require('nativewind/metro');
+
+const config = getDefaultConfig(__dirname);
+
+// Disable terminal reporter to avoid export issues
+config.reporter = {
+  update: () => {},
+};
+
+// Add web support
+config.resolver.platforms = ['ios', 'android', 'native', 'web'];
+
+// Handle import.meta
+config.transformer.babelTransformerPath = require.resolve('metro-react-native-babel-transformer');
+
+module.exports = withNativeWind(config, { input: './global.css' });
+`;
+  
+  try {
+    fs.writeFileSync('./metro.config.js', metroConfigContent);
+    console.log('Created custom metro.config.js');
+    return true;
+  } catch (error) {
+    console.warn('Warning: Could not create metro.config.js:', error.message);
+    return false;
+  }
+}
+
 function startStaticBuild() {
   console.log('Starting static build...');
   
-  // Use the correct export command
+  // Set additional environment variables to disable problematic features
+  process.env.EXPO_NO_METRO_TERMINAL_REPORTER = '1';
+  process.env.METRO_NO_TERMINAL_REPORTER = '1';
+  process.env.METRO_NO_TERMINAL = '1';
+  process.env.CI = '1';
+  
+  // Use the correct export command with web bundler
   const command = 'npx';
-  const args = ['expo', 'export', '--platform', 'web', '--output-dir', 'dist'];
+  const args = ['expo', 'export:web', '--output-dir', 'dist'];
   
   console.log(`Running build command: ${command} ${args.join(' ')}`);
   
@@ -172,6 +211,17 @@ function startStaticBuild() {
       if (fs.existsSync(indexPath)) {
         console.log('Build completed successfully!');
         console.log('Output directory:', distPath);
+        
+        // Clean up temporary metro config
+        try {
+          if (fs.existsSync('./metro.config.js')) {
+            fs.unlinkSync('./metro.config.js');
+            console.log('Cleaned up temporary metro.config.js');
+          }
+        } catch (error) {
+          console.warn('Warning: Could not clean up metro.config.js:', error.message);
+        }
+        
         process.exit(0);
       } else {
         console.error('Build completed but no index.html found in dist directory');
@@ -179,6 +229,17 @@ function startStaticBuild() {
       }
     } else {
       console.error(`Build command failed with code ${code}`);
+      
+      // Clean up temporary metro config on failure
+      try {
+        if (fs.existsSync('./metro.config.js')) {
+          fs.unlinkSync('./metro.config.js');
+          console.log('Cleaned up temporary metro.config.js');
+        }
+      } catch (error) {
+        console.warn('Warning: Could not clean up metro.config.js:', error.message);
+      }
+      
       process.exit(1);
     }
   });
@@ -186,6 +247,17 @@ function startStaticBuild() {
   buildProcess.on('error', (error) => {
     clearTimeout(timeout);
     console.error(`Build command error: ${error.message}`);
+    
+    // Clean up temporary metro config on error
+    try {
+      if (fs.existsSync('./metro.config.js')) {
+        fs.unlinkSync('./metro.config.js');
+        console.log('Cleaned up temporary metro.config.js');
+      }
+    } catch (error) {
+      console.warn('Warning: Could not clean up metro.config.js:', error.message);
+    }
+    
     process.exit(1);
   });
 }
@@ -199,7 +271,10 @@ async function main() {
     // Step 2: Update app.json for web build
     createAppJson();
     
-    // Step 3: Start the static build
+    // Step 3: Create custom metro config to avoid terminal reporter issues
+    createMetroConfig();
+    
+    // Step 4: Start the static build
     startStaticBuild();
     
   } catch (error) {

@@ -4,18 +4,22 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('Starting webpack-based build process...');
+console.log('Starting webpack build process...');
 console.log('Node version:', process.version);
 console.log('Current directory:', process.cwd());
 
 // Set environment variables for webpack build
 process.env.NODE_ENV = 'production';
-process.env.BABEL_ENV = 'web';
+process.env.BABEL_ENV = 'production';
 process.env.EXPO_PLATFORM = 'web';
 process.env.EXPO_PUBLIC_USE_STATIC = 'true';
 process.env.EXPO_USE_STATIC = 'true';
 process.env.SKIP_PREFLIGHT_CHECK = 'true';
 process.env.NODE_OPTIONS = '--max-old-space-size=4096';
+process.env.EXPO_USE_FAST_RESOLVER = 'true';
+process.env.EXPO_NO_DOTENV = '1';
+process.env.EXPO_CLEAR_CACHE = 'true';
+process.env.CI = '1';
 
 function preprocessImportMeta() {
   console.log('Pre-processing files to handle import.meta...');
@@ -104,62 +108,36 @@ function preprocessImportMeta() {
   }
 }
 
-function createWebpackConfig() {
-  console.log('Creating webpack.config.js...');
+function createAppJson() {
+  console.log('Creating temporary app.json for webpack build...');
   
-  const webpackConfig = `const createExpoWebpackConfigAsync = require('@expo/webpack-config');
-
-module.exports = async function (env, argv) {
-  const config = await createExpoWebpackConfigAsync({
-    ...env,
-    mode: 'production',
-    https: false,
-  }, argv);
+  const appJsonPath = './app.json';
+  let appConfig = {};
   
-  // Disable source maps for production
-  config.devtool = false;
-  
-  // Optimize bundle
-  config.optimization = {
-    ...config.optimization,
-    minimize: true,
-    splitChunks: {
-      chunks: 'all',
-      cacheGroups: {
-        vendor: {
-          test: /[\\\\/]node_modules[\\\\/]/,
-          name: 'vendors',
-          chunks: 'all',
-        },
-      },
-    },
-  };
-  
-  // Handle import.meta
-  config.module.rules.push({
-    test: /\.(js|jsx|ts|tsx)$/,
-    use: {
-      loader: 'babel-loader',
-      options: {
-        presets: ['@babel/preset-env', '@babel/preset-react', '@babel/preset-typescript'],
-        plugins: [
-          ['@babel/plugin-transform-runtime', { regenerator: true }],
-          ['babel-plugin-transform-import-meta', { module: 'ES6' }]
-        ]
-      }
+  // Read existing app.json if it exists
+  if (fs.existsSync(appJsonPath)) {
+    try {
+      const content = fs.readFileSync(appJsonPath, 'utf8');
+      appConfig = JSON.parse(content);
+    } catch (error) {
+      console.warn('Warning: Could not parse existing app.json:', error.message);
     }
-  });
+  }
   
-  return config;
-};
-`;
-
+  // Ensure web configuration with webpack bundler
+  appConfig.expo = appConfig.expo || {};
+  appConfig.expo.web = appConfig.expo.web || {};
+  appConfig.expo.web.bundler = 'webpack';
+  appConfig.expo.web.build = appConfig.expo.web.build || {};
+  appConfig.expo.web.build.babel = appConfig.expo.web.build.babel || {};
+  appConfig.expo.web.build.babel.dangerouslyAllowSyntaxErrors = true;
+  
   try {
-    fs.writeFileSync('webpack.config.js', webpackConfig);
-    console.log('Created webpack.config.js');
+    fs.writeFileSync(appJsonPath, JSON.stringify(appConfig, null, 2));
+    console.log('Updated app.json for webpack build');
     return true;
   } catch (error) {
-    console.warn('Warning: Could not create webpack.config.js:', error.message);
+    console.warn('Warning: Could not update app.json:', error.message);
     return false;
   }
 }
@@ -167,81 +145,88 @@ module.exports = async function (env, argv) {
 function startWebpackBuild() {
   console.log('Starting webpack build...');
   
-  const buildArgs = [
-    'expo', 'build:web',
-    '--no-pwa'
+  // Try multiple build commands in order of preference
+  const buildCommands = [
+    ['npx', ['expo', 'export:web', '--output-dir', 'dist']],
+    ['expo', ['export:web', '--output-dir', 'dist']],
+    ['npx', ['expo', 'build:web']],
+    ['expo', ['build:web']]
   ];
-
-  const buildProcess = spawn('npx', buildArgs, {
-    stdio: 'inherit',
-    env: process.env
-  });
-
-  // Set a timeout to kill the process if it hangs
-  const timeout = setTimeout(() => {
-    console.error('Build process timed out after 15 minutes');
-    buildProcess.kill('SIGTERM');
-    process.exit(1);
-  }, 15 * 60 * 1000); // 15 minutes
-
-  buildProcess.on('close', (code) => {
-    clearTimeout(timeout);
-    
-    // Clean up temporary webpack config
-    if (fs.existsSync('webpack.config.js')) {
-      try {
-        fs.unlinkSync('webpack.config.js');
-        console.log('Cleaned up temporary webpack.config.js');
-      } catch (error) {
-        console.warn('Warning: Could not clean up webpack.config.js:', error.message);
-      }
+  
+  let currentCommandIndex = 0;
+  
+  function tryNextCommand() {
+    if (currentCommandIndex >= buildCommands.length) {
+      console.error('All build commands failed');
+      process.exit(1);
+      return;
     }
     
-    if (code === 0) {
-      // Check for build output in web-build directory
-      const webBuildPath = path.join(process.cwd(), 'web-build');
-      const distPath = path.join(process.cwd(), 'dist');
+    const [command, args] = buildCommands[currentCommandIndex];
+    console.log(`Trying build command: ${command} ${args.join(' ')}`);
+    
+    const buildProcess = spawn(command, args, {
+      stdio: 'inherit',
+      env: process.env
+    });
+
+    // Set a timeout to kill the process if it hangs
+    const timeout = setTimeout(() => {
+      console.error('Build process timed out after 10 minutes');
+      buildProcess.kill('SIGTERM');
+      currentCommandIndex++;
+      setTimeout(tryNextCommand, 1000);
+    }, 10 * 60 * 1000); // 10 minutes
+
+    buildProcess.on('close', (code) => {
+      clearTimeout(timeout);
       
-      if (fs.existsSync(webBuildPath)) {
-        // Move web-build to dist
-        try {
-          if (fs.existsSync(distPath)) {
-            fs.rmSync(distPath, { recursive: true, force: true });
-          }
-          fs.renameSync(webBuildPath, distPath);
+      if (code === 0) {
+        const distPath = path.join(process.cwd(), 'dist');
+        const webBuildPath = path.join(process.cwd(), 'web-build');
+        const indexPath = path.join(distPath, 'index.html');
+        const webBuildIndexPath = path.join(webBuildPath, 'index.html');
+        
+        if (fs.existsSync(indexPath)) {
           console.log('Build completed successfully!');
           console.log('Output directory:', distPath);
           process.exit(0);
-        } catch (error) {
-          console.error('Error moving build output:', error);
-          process.exit(1);
+        } else if (fs.existsSync(webBuildIndexPath)) {
+          // Move web-build to dist
+          try {
+            if (fs.existsSync(distPath)) {
+              fs.rmSync(distPath, { recursive: true, force: true });
+            }
+            fs.renameSync(webBuildPath, distPath);
+            console.log('Build completed successfully!');
+            console.log('Output directory:', distPath);
+            process.exit(0);
+          } catch (error) {
+            console.error('Error moving build output:', error);
+            currentCommandIndex++;
+            setTimeout(tryNextCommand, 1000);
+          }
+        } else {
+          console.error('Build completed but no index.html found');
+          currentCommandIndex++;
+          setTimeout(tryNextCommand, 1000);
         }
       } else {
-        console.error('Build completed but web-build directory not found');
-        process.exit(1);
+        console.error(`Build command failed with code ${code}`);
+        currentCommandIndex++;
+        setTimeout(tryNextCommand, 1000);
       }
-    } else {
-      console.error(`Build process exited with code ${code}`);
-      process.exit(code);
-    }
-  });
+    });
 
-  buildProcess.on('error', (error) => {
-    clearTimeout(timeout);
-    
-    // Clean up temporary webpack config
-    if (fs.existsSync('webpack.config.js')) {
-      try {
-        fs.unlinkSync('webpack.config.js');
-        console.log('Cleaned up temporary webpack.config.js');
-      } catch (cleanupError) {
-        console.warn('Warning: Could not clean up webpack.config.js:', cleanupError.message);
-      }
-    }
-    
-    console.error('Build process error:', error);
-    process.exit(1);
-  });
+    buildProcess.on('error', (error) => {
+      clearTimeout(timeout);
+      console.error(`Build command error: ${error.message}`);
+      currentCommandIndex++;
+      setTimeout(tryNextCommand, 1000);
+    });
+  }
+  
+  tryNextCommand();
 }
 
 // Main execution
@@ -250,12 +235,8 @@ async function main() {
     // Step 1: Preprocess import.meta
     preprocessImportMeta();
     
-    // Step 2: Create webpack config
-    const webpackConfigCreated = createWebpackConfig();
-    
-    if (!webpackConfigCreated) {
-      console.error('Failed to create webpack config, continuing without it...');
-    }
+    // Step 2: Update app.json for webpack build
+    createAppJson();
     
     // Step 3: Start the webpack build
     startWebpackBuild();
@@ -269,25 +250,11 @@ async function main() {
 // Handle process termination gracefully
 process.on('SIGTERM', () => {
   console.log('Received SIGTERM, exiting gracefully...');
-  if (fs.existsSync('webpack.config.js')) {
-    try {
-      fs.unlinkSync('webpack.config.js');
-    } catch (error) {
-      console.warn('Could not clean up webpack.config.js:', error.message);
-    }
-  }
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   console.log('Received SIGINT, exiting gracefully...');
-  if (fs.existsSync('webpack.config.js')) {
-    try {
-      fs.unlinkSync('webpack.config.js');
-    } catch (error) {
-      console.warn('Could not clean up webpack.config.js:', error.message);
-    }
-  }
   process.exit(0);
 });
 
