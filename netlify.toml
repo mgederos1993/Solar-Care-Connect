@@ -1,6 +1,6 @@
 [build]
   publish = "dist"
-  command = "npm install --legacy-peer-deps && rm -rf .expo && rm -rf node_modules/.cache && rm -rf dist && rm -rf web-build && node build-webpack.js"
+  command = "npm install --legacy-peer-deps && rm -rf .expo && rm -rf node_modules/.cache && rm -rf dist && rm -rf web-build && node build-no-metro.js"
 
 [build.environment]
   NODE_VERSION = "22.14.0"
