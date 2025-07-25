@@ -126,7 +126,7 @@ function createAppJson() {
   // Ensure web configuration
   appConfig.expo = appConfig.expo || {};
   appConfig.expo.web = appConfig.expo.web || {};
-  appConfig.expo.web.bundler = 'webpack';
+  appConfig.expo.web.bundler = 'metro';
   appConfig.expo.web.build = appConfig.expo.web.build || {};
   appConfig.expo.web.build.babel = appConfig.expo.web.build.babel || {};
   appConfig.expo.web.build.babel.dangerouslyAllowSyntaxErrors = true;
