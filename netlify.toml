@@ -1,6 +1,6 @@
 [build]
   publish = "dist"
-  command = "npm install --legacy-peer-deps && rm -rf .expo && rm -rf node_modules/.cache && rm -rf dist && rm -rf web-build && node build-web-safe.js"
+  command = "npm install --legacy-peer-deps && rm -rf .expo && rm -rf node_modules/.cache && rm -rf dist && rm -rf web-build && node build-final.js"
 
 [build.environment]
   NODE_VERSION = "22.14.0"
@@ -9,26 +9,12 @@
   NODE_ENV = "production"
   BABEL_ENV = "production"
   SKIP_PREFLIGHT_CHECK = "true"
-  EXPO_USE_FAST_RESOLVER = "true"
-  EXPO_NO_DOTENV = "1"
-  EXPO_CLEAR_CACHE = "true"
   EXPO_PLATFORM = "web"
   EXPO_PUBLIC_USE_STATIC = "true"
-  EXPO_NO_METRO_LAZY = "1"
-  EXPO_NO_FLIPPER = "1"
-  EXPO_USE_METRO_REQUIRE = "true"
-  EXPO_NO_IMPORT_META = "true"
   EXPO_USE_STATIC = "true"
-  EXPO_SKIP_MANIFEST_VALIDATION_WARNINGS = "true"
+  EXPO_NO_METRO = "1"
+  EXPO_USE_WEBPACK = "1"
   NODE_OPTIONS = "--max-old-space-size=4096"
-  EXPO_WEB_BUILD_CACHE = "false"
-  EXPO_NO_METRO_TERMINAL_REPORTER = "true"
-  METRO_NO_TERMINAL_REPORTER = "true"
-  METRO_NO_TERMINAL = "1"
-  METRO_DISABLE_TERMINAL_REPORTER = "1"
-  EXPO_DISABLE_METRO_TERMINAL = "1"
-  METRO_SILENT = "1"
-  EXPO_NO_METRO_REPORTER = "1"
   CI = "1"
 
 [[redirects]]
