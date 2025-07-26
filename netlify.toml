@@ -1,6 +1,6 @@
 [build]
   publish = "dist"
-  command = "npm install --legacy-peer-deps && rm -rf .expo && rm -rf node_modules/.cache && rm -rf dist && rm -rf web-build && node build-web-metro.js"
+  command = "npm install --legacy-peer-deps && rm -rf .expo && rm -rf node_modules/.cache && rm -rf dist && rm -rf web-build && node build-web-safe.js"
 
 [build.environment]
   NODE_VERSION = "22.14.0"
@@ -25,6 +25,11 @@
   EXPO_NO_METRO_TERMINAL_REPORTER = "true"
   METRO_NO_TERMINAL_REPORTER = "true"
   METRO_NO_TERMINAL = "1"
+  METRO_DISABLE_TERMINAL_REPORTER = "1"
+  EXPO_DISABLE_METRO_TERMINAL = "1"
+  METRO_SILENT = "1"
+  EXPO_NO_METRO_REPORTER = "1"
+  CI = "1"
 
 [[redirects]]
   from = "/*"

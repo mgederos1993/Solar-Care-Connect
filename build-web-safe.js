@@ -4,11 +4,11 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('Starting web build with Metro bundler...');
+console.log('Starting safe web build process...');
 console.log('Node version:', process.version);
 console.log('Current directory:', process.cwd());
 
-// Set environment variables to optimize for web builds
+// Set environment variables to optimize for web builds and avoid Node.js v22 issues
 process.env.NODE_ENV = 'production';
 process.env.BABEL_ENV = 'production';
 process.env.EXPO_PLATFORM = 'web';
@@ -21,22 +21,20 @@ process.env.EXPO_NO_DOTENV = '1';
 process.env.EXPO_CLEAR_CACHE = 'true';
 process.env.CI = '1';
 
-// Disable Metro terminal reporter completely to avoid Node.js v22 export issues
+// Completely disable all Metro terminal reporting to avoid Node.js v22 export issues
 process.env.EXPO_NO_METRO_TERMINAL_REPORTER = 'true';
 process.env.METRO_NO_TERMINAL_REPORTER = 'true';
 process.env.METRO_NO_TERMINAL = '1';
+process.env.METRO_DISABLE_TERMINAL_REPORTER = '1';
+process.env.EXPO_DISABLE_METRO_TERMINAL = '1';
+process.env.METRO_SILENT = '1';
+process.env.EXPO_NO_METRO_REPORTER = '1';
 process.env.EXPO_NO_METRO_LAZY = '1';
 process.env.EXPO_NO_FLIPPER = '1';
 process.env.EXPO_USE_METRO_REQUIRE = 'true';
 process.env.EXPO_NO_IMPORT_META = 'true';
 process.env.EXPO_SKIP_MANIFEST_VALIDATION_WARNINGS = 'true';
 process.env.EXPO_WEB_BUILD_CACHE = 'false';
-
-// Additional environment variables to disable problematic Metro features
-process.env.METRO_DISABLE_TERMINAL_REPORTER = '1';
-process.env.EXPO_DISABLE_METRO_TERMINAL = '1';
-process.env.METRO_SILENT = '1';
-process.env.EXPO_NO_METRO_REPORTER = '1';
 
 function preprocessImportMeta() {
   console.log('Pre-processing files to handle import.meta...');
@@ -125,43 +123,8 @@ function preprocessImportMeta() {
   }
 }
 
-function createWebAppConfig() {
-  console.log('Creating temporary app.json for web build...');
-  
-  let appConfig;
-  try {
-    const appConfigContent = fs.readFileSync('app.json', 'utf8');
-    appConfig = JSON.parse(appConfigContent);
-  } catch (error) {
-    console.error('Error reading app.json:', error.message);
-    return false;
-  }
-  
-  // Ensure web configuration with metro bundler
-  if (!appConfig.expo.web) {
-    appConfig.expo.web = {};
-  }
-  
-  // Set bundler to metro for web platform
-  appConfig.expo.web.bundler = 'metro';
-  
-  // Ensure favicon is set
-  if (!appConfig.expo.web.favicon) {
-    appConfig.expo.web.favicon = './assets/images/favicon.png';
-  }
-  
-  try {
-    fs.writeFileSync('app.json', JSON.stringify(appConfig, null, 2));
-    console.log('Updated app.json for web build with Metro bundler');
-    return true;
-  } catch (error) {
-    console.error('Error writing app.json:', error.message);
-    return false;
-  }
-}
-
-function createMetroConfig() {
-  console.log('Creating metro.config.js...');
+function createSafeMetroConfig() {
+  console.log('Creating safe metro.config.js...');
   
   const metroConfig = `const { getDefaultConfig } = require('expo/metro-config');
 
@@ -174,7 +137,9 @@ config.resolver.platforms = ['ios', 'android', 'native', 'web'];
 config.resolver.sourceExts = [...(config.resolver.sourceExts || []), 'web.js', 'web.ts', 'web.tsx'];
 
 // Completely disable terminal reporter to avoid Node.js v22 export issues
-config.reporter = null;
+config.reporter = {
+  update: () => {},
+};
 
 // Disable package exports support to avoid Node.js v22 compatibility issues
 config.resolver.unstable_enablePackageExports = false;
@@ -183,12 +148,25 @@ config.resolver.unstable_enablePackageExports = false;
 config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
 config.resolver.resolveRequest = null;
 
+// Override transformer to handle Node.js v22 compatibility
+config.transformer = {
+  ...config.transformer,
+  babelTransformerPath: require.resolve('metro-react-native-babel-transformer'),
+  minifierPath: 'metro-minify-terser',
+  minifierConfig: {
+    keep_fnames: true,
+    mangle: {
+      keep_fnames: true,
+    },
+  },
+};
+
 module.exports = config;
 `;
 
   try {
     fs.writeFileSync('metro.config.js', metroConfig);
-    console.log('Created metro.config.js');
+    console.log('Created safe metro.config.js');
     return true;
   } catch (error) {
     console.warn('Warning: Could not create metro.config.js:', error.message);
@@ -196,68 +174,47 @@ module.exports = config;
   }
 }
 
-function startExportBuild() {
-  console.log('Starting Expo export for web...');
+function createWebAppConfig() {
+  console.log('Creating app.json for web build...');
   
-  const buildArgs = [
-    'expo', 'export', 
-    '--platform', 'web', 
-    '--output-dir', 'dist',
-    '--clear'
-  ];
-
-  const buildProcess = spawn('npx', buildArgs, {
-    stdio: 'inherit',
-    env: process.env
-  });
-
-  // Set a timeout to kill the process if it hangs
-  const timeout = setTimeout(() => {
-    console.error('Build process timed out after 10 minutes');
-    buildProcess.kill('SIGTERM');
-    tryWebpackFallback();
-  }, 10 * 60 * 1000); // 10 minutes
-
-  buildProcess.on('close', (code) => {
-    clearTimeout(timeout);
-    
-    if (code === 0) {
-      // Verify the build output
-      const distPath = path.join(process.cwd(), 'dist');
-      const indexPath = path.join(distPath, 'index.html');
-      
-      if (fs.existsSync(indexPath)) {
-        console.log('Build completed successfully!');
-        console.log('Output directory:', distPath);
-        cleanupAndExit(0);
-      } else {
-        console.error('Build completed but index.html not found');
-        cleanupAndExit(1);
-      }
-    } else {
-      console.error(`Metro build process exited with code ${code}`);
-      console.log('Trying webpack fallback...');
-      tryWebpackFallback();
-    }
-  });
-
-  buildProcess.on('error', (error) => {
-    clearTimeout(timeout);
-    console.error('Metro build process error:', error);
-    console.log('Trying webpack fallback...');
-    tryWebpackFallback();
-  });
+  let appConfig;
+  try {
+    const appConfigContent = fs.readFileSync('app.json', 'utf8');
+    appConfig = JSON.parse(appConfigContent);
+  } catch (error) {
+    console.error('Error reading app.json:', error.message);
+    return false;
+  }
+  
+  // Ensure web configuration
+  if (!appConfig.expo.web) {
+    appConfig.expo.web = {};
+  }
+  
+  // Use webpack as it's more stable with Node.js v22
+  appConfig.expo.web.bundler = 'webpack';
+  
+  // Ensure favicon is set
+  if (!appConfig.expo.web.favicon) {
+    appConfig.expo.web.favicon = './assets/images/favicon.png';
+  }
+  
+  try {
+    fs.writeFileSync('app.json', JSON.stringify(appConfig, null, 2));
+    console.log('Updated app.json for web build');
+    return true;
+  } catch (error) {
+    console.error('Error writing app.json:', error.message);
+    return false;
+  }
 }
 
-function tryWebpackFallback() {
-  console.log('Starting webpack fallback build...');
+function startWebpackBuild() {
+  console.log('Starting Expo webpack build...');
   
-  // Update app.json for webpack
-  updateAppConfigForWebpack();
+  const buildArgs = ['expo', 'export:web'];
   
-  const webpackArgs = ['expo', 'export:web'];
-  
-  const webpackProcess = spawn('npx', webpackArgs, {
+  const buildProcess = spawn('npx', buildArgs, {
     stdio: 'inherit',
     env: {
       ...process.env,
@@ -265,7 +222,16 @@ function tryWebpackFallback() {
     }
   });
   
-  webpackProcess.on('close', (code) => {
+  // Set a timeout to kill the process if it hangs
+  const timeout = setTimeout(() => {
+    console.error('Build process timed out after 15 minutes');
+    buildProcess.kill('SIGTERM');
+    cleanupAndExit(1);
+  }, 15 * 60 * 1000); // 15 minutes
+  
+  buildProcess.on('close', (code) => {
+    clearTimeout(timeout);
+    
     if (code === 0) {
       // Move web-build to dist
       const webBuildPath = path.join(process.cwd(), 'web-build');
@@ -281,55 +247,34 @@ function tryWebpackFallback() {
           // Rename web-build to dist
           fs.renameSync(webBuildPath, distPath);
           
-          console.log('Webpack build completed successfully!');
-          console.log('Output directory:', distPath);
-          cleanupAndExit(0);
+          const indexPath = path.join(distPath, 'index.html');
+          if (fs.existsSync(indexPath)) {
+            console.log('Build completed successfully!');
+            console.log('Output directory:', distPath);
+            cleanupAndExit(0);
+          } else {
+            console.error('Build completed but index.html not found');
+            cleanupAndExit(1);
+          }
         } catch (error) {
-          console.error('Error moving webpack build output:', error);
+          console.error('Error moving build output:', error);
           cleanupAndExit(1);
         }
       } else {
-        console.error('Webpack build completed but web-build directory not found');
+        console.error('Build completed but web-build directory not found');
         cleanupAndExit(1);
       }
     } else {
-      console.error(`Webpack build process exited with code ${code}`);
+      console.error(`Build process exited with code ${code}`);
       cleanupAndExit(code);
     }
   });
   
-  webpackProcess.on('error', (error) => {
-    console.error('Webpack build process error:', error);
+  buildProcess.on('error', (error) => {
+    clearTimeout(timeout);
+    console.error('Build process error:', error);
     cleanupAndExit(1);
   });
-}
-
-function updateAppConfigForWebpack() {
-  console.log('Updating app.json for webpack build...');
-  
-  let appConfig;
-  try {
-    const appConfigContent = fs.readFileSync('app.json', 'utf8');
-    appConfig = JSON.parse(appConfigContent);
-  } catch (error) {
-    console.error('Error reading app.json for webpack update:', error.message);
-    return;
-  }
-  
-  // Ensure web configuration with webpack bundler
-  if (!appConfig.expo.web) {
-    appConfig.expo.web = {};
-  }
-  
-  // Set bundler to webpack for fallback
-  appConfig.expo.web.bundler = 'webpack';
-  
-  try {
-    fs.writeFileSync('app.json', JSON.stringify(appConfig, null, 2));
-    console.log('Updated app.json for webpack build');
-  } catch (error) {
-    console.error('Error writing app.json for webpack:', error.message);
-  }
 }
 
 function cleanupAndExit(code) {
@@ -347,9 +292,6 @@ function cleanupAndExit(code) {
     }
   }
   
-  // Restore original app.json if needed
-  // Note: In a real scenario, you might want to backup and restore the original
-  
   process.exit(code);
 }
 
@@ -359,21 +301,18 @@ async function main() {
     // Step 1: Preprocess import.meta
     preprocessImportMeta();
     
-    // Step 2: Create web app config
+    // Step 2: Create web app config (using webpack)
     const appConfigCreated = createWebAppConfig();
     if (!appConfigCreated) {
       console.error('Failed to create web app config');
       cleanupAndExit(1);
     }
     
-    // Step 3: Create metro config
-    const metroConfigCreated = createMetroConfig();
-    if (!metroConfigCreated) {
-      console.error('Failed to create metro config, continuing without it...');
-    }
+    // Step 3: Create safe metro config (just in case)
+    createSafeMetroConfig();
     
-    // Step 4: Start the build
-    startExportBuild();
+    // Step 4: Start webpack build
+    startWebpackBuild();
     
   } catch (error) {
     console.error('Build process failed:', error);
