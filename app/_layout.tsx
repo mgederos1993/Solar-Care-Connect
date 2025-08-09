@@ -9,6 +9,19 @@ import { LogBox, Platform } from "react-native";
 import Colors from "../constants/colors";
 import ErrorBoundary from "../components/ErrorBoundary";
 
+// Initialize stores on app start
+import { useSubscriptionStore } from "../store/subscriptionStore";
+import { useUserStore } from "../store/userStore";
+
+// Store initializer component
+function StoreInitializer({ children }: { children: React.ReactNode }) {
+  // Initialize stores by calling them
+  useSubscriptionStore();
+  useUserStore();
+  
+  return <>{children}</>;
+}
+
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 if (Platform.OS !== 'web') {
   SplashScreen.preventAutoHideAsync().catch(() => {
@@ -58,45 +71,47 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <StatusBar style="dark" />
-          <Stack
-            screenOptions={{
-              headerBackTitle: "Back",
-              headerStyle: {
-                backgroundColor: Colors.light.background,
-              },
-              headerTintColor: Colors.light.primary,
-              headerTitleStyle: {
-                fontWeight: '600',
-              },
-              contentStyle: {
-                backgroundColor: Colors.light.background,
-              },
-            }}
-          >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen 
-              name="appointment/[id]" 
-              options={{ 
-                title: "Appointment Details",
-                presentation: "modal",
-              }} 
-            />
-            <Stack.Screen 
-              name="settings" 
-              options={{ 
-                title: "Settings",
-              }} 
-            />
-            <Stack.Screen 
-              name="profile" 
-              options={{ 
-                title: "Edit Profile",
-              }} 
-            />
-          </Stack>
-        </GestureHandlerRootView>
+        <StoreInitializer>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <StatusBar style="dark" />
+            <Stack
+              screenOptions={{
+                headerBackTitle: "Back",
+                headerStyle: {
+                  backgroundColor: Colors.light.background,
+                },
+                headerTintColor: Colors.light.primary,
+                headerTitleStyle: {
+                  fontWeight: '600',
+                },
+                contentStyle: {
+                  backgroundColor: Colors.light.background,
+                },
+              }}
+            >
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen 
+                name="appointment/[id]" 
+                options={{ 
+                  title: "Appointment Details",
+                  presentation: "modal",
+                }} 
+              />
+              <Stack.Screen 
+                name="settings" 
+                options={{ 
+                  title: "Settings",
+                }} 
+              />
+              <Stack.Screen 
+                name="profile" 
+                options={{ 
+                  title: "Edit Profile",
+                }} 
+              />
+            </Stack>
+          </GestureHandlerRootView>
+        </StoreInitializer>
       </QueryClientProvider>
     </ErrorBoundary>
   );
