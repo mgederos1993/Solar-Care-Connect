@@ -170,41 +170,28 @@ function createAppJson() {
 }
 
 function buildApp() {
-  console.log('Starting webpack build...');
+  console.log('Starting Expo web build...');
   
   try {
-    // Try different build commands
-    const buildCommands = [
-      'npx expo export:web --output-dir dist',
-      'expo export:web --output-dir dist',
-      'npx webpack --mode production --output-path dist',
-      'webpack --mode production --output-path dist'
-    ];
-    
-    let buildSuccess = false;
-    
-    for (const command of buildCommands) {
-      try {
-        console.log(`Trying build command: ${command}`);
-        execSync(command, { 
-          stdio: 'inherit',
-          env: {
-            ...process.env,
-            NODE_ENV: 'production',
-            BABEL_ENV: 'production',
-            EXPO_PLATFORM: 'web'
-          }
-        });
-        buildSuccess = true;
-        break;
-      } catch (error) {
-        console.log(`Build command failed with code ${error.status}`);
-        continue;
+    // Use the correct Expo command for web export
+    console.log('Running: npx expo export:web');
+    execSync('npx expo export:web', { 
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        BABEL_ENV: 'production',
+        EXPO_PLATFORM: 'web'
       }
-    }
+    });
     
-    if (!buildSuccess) {
-      throw new Error('All build commands failed');
+    // Move web-build to dist if it exists
+    if (fs.existsSync('web-build')) {
+      console.log('Moving web-build to dist...');
+      if (fs.existsSync('dist')) {
+        execSync('rm -rf dist');
+      }
+      fs.renameSync('web-build', 'dist');
     }
     
     console.log('✅ Build completed successfully!');
