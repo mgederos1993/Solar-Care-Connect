@@ -68,7 +68,8 @@ export default function HomeScreen() {
         </Text>
       </View>
       
-      {isSubscribed && selectedPlan ? (
+      {/* Always show subscription plans on web, show current plan on mobile if subscribed */}
+      {Platform.OS !== 'web' && isSubscribed && selectedPlan ? (
         <View style={styles.currentPlanSection}>
           <Text style={styles.sectionTitle}>Your Current Plan</Text>
           <View style={[styles.currentPlanCard, { borderColor: selectedPlan.color }]}>
@@ -102,7 +103,10 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      ) : (
+      ) : null}
+      
+      {/* Always show subscription plans on web, or show on mobile if not subscribed */}
+      {Platform.OS === 'web' || !isSubscribed ? (
         <View style={styles.subscriptionSection}>
           <Text style={styles.sectionTitle}>Choose a Subscription Plan</Text>
           <Text style={styles.sectionSubtitle}>
@@ -187,7 +191,7 @@ export default function HomeScreen() {
             ))}
           </View>
         </View>
-      )}
+      ) : null}
       
       <View style={styles.howItWorksSection}>
         <Text style={styles.sectionTitle}>How It Works</Text>
