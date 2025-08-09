@@ -1,6 +1,6 @@
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowRight, Calendar, CheckCircle, Infinity } from 'lucide-react-native';
+import { ArrowRight, CheckCircle, Infinity } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect } from 'react';
 
@@ -79,7 +79,7 @@ export default function HomeScreen() {
             
             <View style={styles.currentPlanDetails}>
               <Text style={styles.currentPlanPrice}>${selectedPlan.price.toLocaleString()}/{selectedPlan.interval}</Text>
-              <View style={styles.appointmentsRow}>
+              <View style={styles.currentPlanAppointmentsRow}>
                 {selectedPlan.appointmentsPerMonth === 999 ? (
                   <>
                     <Infinity size={16} color={selectedPlan.color} />
@@ -110,65 +110,82 @@ export default function HomeScreen() {
           </Text>
           
           <View style={styles.plansContainer}>
-            {subscriptionPlans.slice(0, 2).map((plan) => (
+            {subscriptionPlans.map((plan) => (
               <TouchableOpacity
                 key={plan.id}
-                style={styles.planCard}
+                style={[
+                  styles.planCard,
+                  plan.popular && styles.popularPlanCard,
+                ]}
                 onPress={() => handlePlanSelect(plan.id)}
               >
+                {plan.popular && (
+                  <View style={[styles.popularBadge, { backgroundColor: plan.color }]}>
+                    <Text style={styles.popularText}>Most Popular</Text>
+                  </View>
+                )}
+                
                 <View style={styles.planHeader}>
                   <Text style={styles.planName}>{plan.name}</Text>
-                  {plan.popular && (
-                    <Text style={[styles.popularBadge, { backgroundColor: plan.color }]}>
-                      Popular
-                    </Text>
+                  <View style={styles.priceContainer}>
+                    <Text style={styles.currency}>$</Text>
+                    <Text style={styles.planPriceAmount}>{plan.price.toLocaleString()}</Text>
+                    <Text style={styles.interval}>/{plan.interval}</Text>
+                  </View>
+                  {plan.description && (
+                    <Text style={styles.planDescription}>{plan.description}</Text>
                   )}
                 </View>
                 
-                <Text style={styles.planPrice}>
-                  <Text style={styles.planPriceAmount}>${plan.price.toLocaleString()}</Text>
-                  /{plan.interval}
-                </Text>
-                
-                <View style={styles.planFeatures}>
-                  <View style={styles.planFeature}>
+                <View style={styles.appointmentsContainer}>
+                  <View style={styles.appointmentsRow}>
                     {plan.appointmentsPerMonth === 999 ? (
-                      <Infinity size={16} color={plan.color} />
+                      <Infinity size={20} color={plan.color} />
                     ) : (
-                      <Calendar size={16} color={plan.color} />
+                      <Text style={[styles.appointmentsNumber, { color: plan.color }]}>
+                        {plan.appointmentsPerMonth}
+                      </Text>
                     )}
-                    <Text style={styles.planFeatureText}>
+                    <Text style={styles.appointmentsText}>
                       {plan.appointmentsPerMonth === 999 
                         ? 'Unlimited appointments' 
-                        : `${plan.appointmentsPerMonth} appointments/month`}
+                        : 'appointments per month'}
                     </Text>
-                  </View>
-                  
-                  <View style={styles.planFeature}>
-                    <CheckCircle size={16} color={plan.color} />
-                    <Text style={styles.planFeatureText}>No-show replacements</Text>
-                  </View>
-                  
-                  <View style={styles.planFeature}>
-                    <CheckCircle size={16} color={plan.color} />
-                    <Text style={styles.planFeatureText}>AI-generated leads</Text>
                   </View>
                 </View>
                 
-                <Text style={[styles.selectPlanButton, { color: plan.color }]}>
-                  Select Plan
-                </Text>
+                <View style={styles.divider} />
+                
+                <View style={styles.planFeatures}>
+                  {plan.features.slice(0, 4).map((feature, index) => (
+                    <View key={index} style={styles.planFeature}>
+                      <CheckCircle size={14} color={plan.color} />
+                      <Text style={styles.planFeatureText}>{feature}</Text>
+                    </View>
+                  ))}
+                  {plan.features.length > 4 && (
+                    <Text style={styles.moreFeatures}>+{plan.features.length - 4} more features</Text>
+                  )}
+                </View>
+                
+                <TouchableOpacity 
+                  style={[styles.selectPlanButton, { backgroundColor: plan.color }]}
+                  onPress={() => handlePlanSelect(plan.id)}
+                >
+                  <Text style={styles.selectPlanButtonText}>Fill Out Application</Text>
+                </TouchableOpacity>
+                
+                <View style={styles.contractInfo}>
+                  <Text style={styles.contractText}>✓ Not a contract - Cancel anytime</Text>
+                  <Text style={styles.contractText}>✓ Minimum 30 days notice required</Text>
+                </View>
+                
+                <View style={styles.disclaimerContainer}>
+                  <Text style={styles.disclaimerText}>* Pricing may vary depending on state</Text>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
-          
-          <TouchableOpacity 
-            style={styles.viewAllPlansButton}
-            onPress={() => router.push('/appointments')}
-          >
-            <Text style={styles.viewAllPlansText}>View All Plan Details</Text>
-            <ArrowRight size={16} color={Colors.light.primary} />
-          </TouchableOpacity>
         </View>
       )}
       
@@ -309,7 +326,7 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     marginBottom: 4,
   },
-  appointmentsRow: {
+  currentPlanAppointmentsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -343,70 +360,154 @@ const styles = StyleSheet.create({
     marginTop: -8,
   },
   plansContainer: {
-    flexDirection: 'row',
-    gap: 12,
+    gap: 16,
   },
   planCard: {
-    flex: 1,
     backgroundColor: Colors.light.card,
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 1,
     borderColor: Colors.light.border,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 1,
+    shadowRadius: 8,
+    elevation: 2,
+    position: 'relative',
   },
-  planHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  planName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.text,
+  popularPlanCard: {
+    transform: [{ scale: 1.02 }],
+    borderWidth: 2,
   },
   popularBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
+    position: 'absolute',
+    top: -12,
+    right: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  popularText: {
     color: 'white',
-    fontSize: 10,
-    fontWeight: '500',
+    fontWeight: '600',
+    fontSize: 12,
   },
-  planPrice: {
-    fontSize: 14,
-    color: Colors.light.subtext,
-    marginBottom: 12,
+  planHeader: {
+    marginBottom: 16,
   },
-  planPriceAmount: {
-    fontSize: 18,
+  planName: {
+    fontSize: 20,
     fontWeight: '700',
     color: Colors.light.text,
+    marginBottom: 8,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginBottom: 8,
+  },
+  currency: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: 4,
+  },
+  planPriceAmount: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: Colors.light.text,
+  },
+  interval: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.light.subtext,
+    marginBottom: 4,
+    marginLeft: 2,
+  },
+  planDescription: {
+    fontSize: 14,
+    color: Colors.light.subtext,
+    fontStyle: 'italic',
+  },
+  appointmentsContainer: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  appointmentsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  appointmentsNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  appointmentsText: {
+    fontSize: 14,
+    color: Colors.light.text,
+    fontWeight: '500',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: Colors.light.border,
+    marginVertical: 16,
   },
   planFeatures: {
-    gap: 8,
-    marginBottom: 12,
+    marginBottom: 20,
   },
   planFeature: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    alignItems: 'flex-start',
+    marginBottom: 10,
+    paddingRight: 8,
   },
   planFeatureText: {
-    fontSize: 12,
+    marginLeft: 8,
+    fontSize: 14,
     color: Colors.light.text,
     flex: 1,
+    lineHeight: 20,
+  },
+  moreFeatures: {
+    fontSize: 12,
+    color: Colors.light.subtext,
+    fontStyle: 'italic',
+    marginTop: 4,
   },
   selectPlanButton: {
-    textAlign: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  selectPlanButtonText: {
+    color: 'white',
     fontWeight: '600',
-    fontSize: 14,
-    marginTop: 4,
+    fontSize: 16,
+  },
+  contractInfo: {
+    backgroundColor: '#F0F9FF',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  contractText: {
+    fontSize: 12,
+    color: Colors.light.text,
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  disclaimerContainer: {
+    alignItems: 'center',
+  },
+  disclaimerText: {
+    fontSize: 12,
+    color: Colors.light.subtext,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   viewAllPlansButton: {
     flexDirection: 'row',
