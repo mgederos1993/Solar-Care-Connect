@@ -36,7 +36,6 @@ module.exports = async function (env, argv) {
               '@': './',
             },
           }],
-          'babel-plugin-transform-import-meta',
         ],
       },
     },
